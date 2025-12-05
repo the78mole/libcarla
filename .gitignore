@@ -1,0 +1,41 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Generated files
+source/carla/Version.h
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+python/build/
+python/dist/
+python/*.egg-info/
+*.egg
+*.whl
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log

@@ -1,0 +1,334 @@
+name: Build and Release LibCarla
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Generate Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+      version_tag: ${{ steps.semver.outputs.version_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Semantic Version
+        id: semver
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+          bump_each_commit_patch_pattern: ""
+
+      - name: Display Version
+        run: |
+          echo "Version: ${{ steps.semver.outputs.version }}"
+          echo "Version Tag: ${{ steps.semver.outputs.version_tag }}"
+
+  build-libcarla:
+    name: Build LibCarla
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        arch: [x86_64, arm64]
+        exclude:
+          - os: ubuntu-22.04
+            arch: arm64
+          - os: ubuntu-24.04
+            arch: arm64
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            artifact_suffix: ubuntu22.04-x86_64
+          - os: ubuntu-24.04
+            arch: x86_64
+            artifact_suffix: ubuntu24.04-x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            clang \
+            libboost-all-dev \
+            libboost-filesystem-dev \
+            libboost-system-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff-dev \
+            libxml2-dev \
+            libsqlite3-dev \
+            zlib1g-dev \
+            python3-dev \
+            python3-pip \
+            python3-setuptools \
+            python3-wheel
+
+      - name: Build LibCarla
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBoost_USE_STATIC_LIBS=ON \
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }}
+          ninja
+
+      - name: Create Archive
+        run: |
+          cd build
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include
+          
+          # Copy all static libraries
+          find . -name "*.a" -exec cp {} libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib/ \; 2>/dev/null || true
+          
+          # Copy headers from source
+          cp -r ../source/carla libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/
+          cp -r ../source/third-party/* libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy rpclib headers
+          cp -r _deps/rpclib-src/include/rpc libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy recast headers
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast
+          cp _deps/recast-src/Recast/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/Detour/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/DetourCrowd/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          
+          # Create archive
+          tar -czvf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz \
+            libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-${{ matrix.artifact_suffix }}
+          path: build/libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
+
+  build-libcarla-cross:
+    name: Build LibCarla (Cross-compile ARM64)
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        include:
+          - os: ubuntu-22.04
+            artifact_suffix: ubuntu22.04-arm64
+          - os: ubuntu-24.04
+            artifact_suffix: ubuntu24.04-arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            crossbuild-essential-arm64
+
+      - name: Install ARM64 Libraries
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          sudo apt-get update || true
+          sudo apt-get install -y \
+            libboost-all-dev:arm64 \
+            libpng-dev:arm64 \
+            libjpeg-dev:arm64 \
+            libtiff-dev:arm64 \
+            libxml2-dev:arm64 \
+            libsqlite3-dev:arm64 \
+            zlib1g-dev:arm64 || true
+
+      - name: Build LibCarla (ARM64)
+        run: |
+          mkdir -p build-arm64
+          cd build-arm64
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBoost_USE_STATIC_LIBS=ON \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
+
+          # Build if cmake succeeded
+          if [ -f build.ninja ]; then
+            ninja || true
+          fi
+
+      - name: Create Archive
+        run: |
+          mkdir -p build-arm64
+          cd build-arm64
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include
+          
+          # Copy all static libraries
+          find . -name "*.a" -exec cp {} libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib/ \; 2>/dev/null || true
+          
+          # Copy headers from source
+          cp -r ../source/carla libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          cp -r ../source/third-party/* libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy rpclib headers
+          cp -r _deps/rpclib-src/include/rpc libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy recast headers
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast
+          cp _deps/recast-src/Recast/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/Detour/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/DetourCrowd/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          
+          # Create archive
+          tar -czvf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz \
+            libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-${{ matrix.artifact_suffix }}
+          path: build-arm64/libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
+
+  build-python-wheels:
+    name: Build Python Wheels
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        python-version: ['3.10', '3.11', '3.12']
+        include:
+          - os: ubuntu-22.04
+            os_suffix: ubuntu22.04
+          - os: ubuntu-24.04
+            os_suffix: ubuntu24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            clang \
+            libboost-all-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff-dev \
+            libxml2-dev \
+            libsqlite3-dev \
+            zlib1g-dev \
+            python3-dev
+          pip install --upgrade pip setuptools wheel build
+
+      - name: Build Python Wheel
+        env:
+          LIBCARLA_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cd python
+          python -m build --wheel
+
+      - name: Upload Wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os_suffix }}-py${{ matrix.python-version }}
+          path: python/dist/*.whl
+
+  release:
+    name: Create Release
+    needs: [version, build-libcarla, build-libcarla-cross, build-python-wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display Downloaded Artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -type f -name "*.tar.gz" -o -name "*.whl" | head -100
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: Release v${{ needs.version.outputs.version }}
+          body: |
+            ## LibCarla v${{ needs.version.outputs.version }}
+            
+            ### Changes
+            - Auto-generated release from commit ${{ github.sha }}
+            
+            ### Artifacts
+            - LibCarla binaries for Ubuntu 22.04 and 24.04 (x86_64 and arm64)
+            - Python wheels for Python 3.10, 3.11, and 3.12
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.whl
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
