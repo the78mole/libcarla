@@ -2,16 +2,22 @@ cmake_minimum_required(VERSION 3.16)
 
 # Set version from environment variable or default
 if(DEFINED ENV{LIBCARLA_VERSION})
-    set(LIBCARLA_VERSION_DEFAULT $ENV{LIBCARLA_VERSION})
+    set(LIBCARLA_VERSION_STRING $ENV{LIBCARLA_VERSION})
 elseif(DEFINED LIBCARLA_VERSION)
-    set(LIBCARLA_VERSION_DEFAULT ${LIBCARLA_VERSION})
+    set(LIBCARLA_VERSION_STRING ${LIBCARLA_VERSION})
 else()
-    set(LIBCARLA_VERSION_DEFAULT "0.9.16")
+    set(LIBCARLA_VERSION_STRING "0.9.16")
 endif()
 
-project(libcarla VERSION ${LIBCARLA_VERSION_DEFAULT})
+# Extract numeric version for CMake (strip any suffix like .devX)
+string(REGEX REPLACE "\\.(dev|rc|alpha|beta)[0-9]*$" "" LIBCARLA_VERSION_NUMERIC "${LIBCARLA_VERSION_STRING}")
 
-message(STATUS "Building LibCarla version: ${PROJECT_VERSION}")
+project(libcarla VERSION ${LIBCARLA_VERSION_NUMERIC})
+
+# Store the full version string for use in code
+set(LIBCARLA_FULL_VERSION "${LIBCARLA_VERSION_STRING}")
+
+message(STATUS "Building LibCarla version: ${LIBCARLA_FULL_VERSION} (CMake version: ${PROJECT_VERSION})")
 
 # C++ Standard
 set(CMAKE_CXX_STANDARD 14)
@@ -97,8 +103,8 @@ endforeach()
 
 include_directories(SYSTEM ${RECAST_INCLUDE_DIR})
 
-# Set CARLA_VERSION for Version.h template
-set(CARLA_VERSION "${PROJECT_VERSION}")
+# Set CARLA_VERSION for Version.h template (use full version string)
+set(CARLA_VERSION "${LIBCARLA_FULL_VERSION}")
 
 # Generate Version.h
 configure_file(

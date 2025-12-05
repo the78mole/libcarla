@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   version:
@@ -19,7 +20,6 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_tag: ${{ steps.version.outputs.version_tag }}
-      python_version: ${{ steps.version.outputs.python_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,23 +43,18 @@ jobs:
           BASE_VERSION="${{ steps.semver.outputs.version }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            # Format for C++ artifacts: 0.0.6-pr-2
-            VERSION="${BASE_VERSION}-pr-${PR_NUMBER}"
-            # PEP 440 compliant format for Python: 0.0.6.dev2
-            PYTHON_VERSION="${BASE_VERSION}.dev${PR_NUMBER}"
+            # PEP 440 compliant format for both C++ and Python: 0.0.6.dev2
+            VERSION="${BASE_VERSION}.dev${PR_NUMBER}"
           else
             VERSION="${BASE_VERSION}"
-            PYTHON_VERSION="${BASE_VERSION}"
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "version_tag=v${VERSION}" >> $GITHUB_OUTPUT
-          echo "python_version=${PYTHON_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Display Version
         run: |
           echo "Version: ${{ steps.version.outputs.version }}"
           echo "Version Tag: ${{ steps.version.outputs.version_tag }}"
-          echo "Python Version: ${{ steps.version.outputs.python_version }}"
 
   build-libcarla:
     name: Build LibCarla
@@ -276,12 +271,15 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          version: "latest"
 
-      - name: Install Dependencies
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -297,20 +295,108 @@ jobs:
             libsqlite3-dev \
             zlib1g-dev \
             python3-dev
-          pip install --upgrade pip setuptools wheel build
 
       - name: Build Python Wheel
         env:
-          LIBCARLA_VERSION: ${{ needs.version.outputs.python_version }}
+          LIBCARLA_VERSION: ${{ needs.version.outputs.version }}
         run: |
           cd python
-          python -m build --wheel
+          uv venv --python ${{ matrix.python-version }}
+          uv pip install build wheel setuptools
+          uv run python -m build --wheel
 
       - name: Upload Wheel
         uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os_suffix }}-py${{ matrix.python-version }}
           path: python/dist/*.whl
+
+  pr-release-notes:
+    name: Post Release Notes to PR
+    needs: [version, build-libcarla, build-libcarla-cross, build-python-wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          {
+            echo "## 🚀 Release Preview: v${{ needs.version.outputs.version }}"
+            echo ""
+            echo "### 📦 Artifacts"
+            echo ""
+            echo "#### C++ Libraries"
+            echo "| Platform | Architecture | Artifact |"
+            echo "|----------|--------------|----------|"
+            for f in $(find artifacts -name "*.tar.gz" | sort); do
+              name=$(basename "$f")
+              echo "| Ubuntu | x86_64/arm64 | \`$name\` |"
+            done
+            echo ""
+            echo "#### Python Wheels"
+            echo "| Platform | Python Version | Artifact |"
+            echo "|----------|----------------|----------|"
+            for f in $(find artifacts -name "*.whl" | sort); do
+              name=$(basename "$f")
+              echo "| Ubuntu | 3.10/3.11/3.12 | \`$name\` |"
+            done
+            echo ""
+            echo "### 📋 Version Information"
+            echo "- **Version**: \`${{ needs.version.outputs.version }}\`"
+            echo "- **Commit**: \`${{ github.sha }}\`"
+            echo ""
+            echo "---"
+            echo "*This is an automated release preview. Artifacts will be available in the release once merged.*"
+          } > release_notes.md
+          
+          # Output for the comment
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post Release Notes Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseNotes = `${{ steps.release_notes.outputs.notes }}`;
+            
+            // Find existing release notes comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🚀 Release Preview:')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: releaseNotes
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: releaseNotes
+              });
+            }
 
   release:
     name: Create Release
