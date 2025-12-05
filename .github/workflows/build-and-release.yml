@@ -43,7 +43,7 @@ jobs:
           BASE_VERSION="${{ steps.semver.outputs.version }}"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            # PEP 440 compliant format for both C++ and Python: 0.0.6.dev2
+            # PEP 440 compliant format: 0.0.6.dev2
             VERSION="${BASE_VERSION}.dev${PR_NUMBER}"
           else
             VERSION="${BASE_VERSION}"
@@ -100,11 +100,7 @@ jobs:
             libtiff-dev \
             libxml2-dev \
             libsqlite3-dev \
-            zlib1g-dev \
-            python3-dev \
-            python3-pip \
-            python3-setuptools \
-            python3-wheel
+            zlib1g-dev
 
       - name: Build LibCarla
         run: |
@@ -250,70 +246,9 @@ jobs:
           name: libcarla-${{ matrix.artifact_suffix }}
           path: build-arm64/libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
 
-  build-python-wheels:
-    name: Build Python Wheels
-    needs: version
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
-        python-version: ['3.10', '3.11', '3.12']
-        include:
-          - os: ubuntu-22.04
-            os_suffix: ubuntu22.04
-          - os: ubuntu-24.04
-            os_suffix: ubuntu24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            clang \
-            libboost-all-dev \
-            libpng-dev \
-            libjpeg-dev \
-            libtiff-dev \
-            libxml2-dev \
-            libsqlite3-dev \
-            zlib1g-dev \
-            python3-dev
-
-      - name: Build Python Wheel
-        env:
-          LIBCARLA_VERSION: ${{ needs.version.outputs.version }}
-        run: |
-          cd python
-          uv venv --python ${{ matrix.python-version }}
-          uv pip install build wheel setuptools
-          uv run python -m build --wheel
-
-      - name: Upload Wheel
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheel-${{ matrix.os_suffix }}-py${{ matrix.python-version }}
-          path: python/dist/*.whl
-
   pr-release-notes:
     name: Post Release Notes to PR
-    needs: [version, build-libcarla, build-libcarla-cross, build-python-wheels]
+    needs: [version, build-libcarla, build-libcarla-cross]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
@@ -339,14 +274,6 @@ jobs:
             for f in $(find artifacts -name "*.tar.gz" | sort); do
               name=$(basename "$f")
               echo "| Ubuntu | x86_64/arm64 | \`$name\` |"
-            done
-            echo ""
-            echo "#### Python Wheels"
-            echo "| Platform | Python Version | Artifact |"
-            echo "|----------|----------------|----------|"
-            for f in $(find artifacts -name "*.whl" | sort); do
-              name=$(basename "$f")
-              echo "| Ubuntu | 3.10/3.11/3.12 | \`$name\` |"
             done
             echo ""
             echo "### 📋 Version Information"
@@ -400,7 +327,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [version, build-libcarla, build-libcarla-cross, build-python-wheels]
+    needs: [version, build-libcarla, build-libcarla-cross]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
@@ -415,7 +342,7 @@ jobs:
       - name: Display Downloaded Artifacts
         run: |
           echo "Downloaded artifacts:"
-          find artifacts -type f -name "*.tar.gz" -o -name "*.whl" | head -100
+          find artifacts -type f -name "*.tar.gz" | head -100
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -430,10 +357,8 @@ jobs:
             
             ### Artifacts
             - LibCarla binaries for Ubuntu 22.04 and 24.04 (x86_64 and arm64)
-            - Python wheels for Python 3.10, 3.11, and 3.12
           files: |
             artifacts/**/*.tar.gz
-            artifacts/**/*.whl
           draft: false
           prerelease: false
         env:

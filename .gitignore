@@ -14,25 +14,6 @@ cmake-build-*/
 source/carla/Version.h
 include/
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-python/build/
-python/dist/
-python/*.egg-info/
-python/source/*.egg-info/
-*.egg
-*.whl
-.eggs/
-
-# Virtual environments
-venv/
-env/
-.env/
-
 # OS files
 .DS_Store
 Thumbs.db
