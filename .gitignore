@@ -23,6 +23,7 @@ __pycache__/
 python/build/
 python/dist/
 python/*.egg-info/
+python/source/*.egg-info/
 *.egg
 *.whl
 .eggs/

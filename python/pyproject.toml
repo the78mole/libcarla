@@ -7,16 +7,15 @@ name = "carla"
 dynamic = ["version"]
 description = "Python API for communicating with the CARLA server."
 readme = "README.md"
-license = {text = "MIT License"}
+license = "MIT"
 authors = [
     {name = "The CARLA team", email = "carla.simulator@gmail.com"},
-    {name = "Daniel Glaser", email = ""}
+    {name = "Daniel Glaser"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
