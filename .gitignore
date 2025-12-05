@@ -12,6 +12,7 @@ cmake-build-*/
 
 # Generated files
 source/carla/Version.h
+include/
 
 # Python
 __pycache__/
