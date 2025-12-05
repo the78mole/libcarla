@@ -13,16 +13,40 @@ This repository provides a standalone build of LibCarla, the core C++ library us
 
 ## Features
 
+- **Self-contained static libraries** - All dependencies are statically linked for easy deployment
 - Pre-built LibCarla binaries for multiple platforms
 - Python wheels with precompiled binaries
 - Semantic versioning with automatic patch version bumps
 - Cross-platform build support
+
+## Release Contents
+
+Each release includes:
+- `libcarla_client.a` - Main LibCarla client static library
+- `librpc.a` - RPC library for client-server communication
+- `libRecast.a`, `libDetour.a`, `libDetourCrowd.a` - Navigation mesh libraries
+- Header files for all libraries
 
 ## Installation
 
 ### Pre-built Releases
 
 Download the latest release from the [Releases](https://github.com/the78mole/libcarla/releases) page.
+
+Each archive contains:
+```
+libcarla-<version>-<platform>/
+├── lib/
+│   ├── libcarla_client.a
+│   ├── librpc.a
+│   ├── libRecast.a
+│   ├── libDetour.a
+│   └── libDetourCrowd.a
+└── include/
+    ├── carla/           # LibCarla headers
+    ├── rpc/             # RPC headers
+    └── recast/          # Navigation headers
+```
 
 ### Building from Source
 
@@ -40,8 +64,6 @@ sudo apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libtiff-dev \
-    libxml2-dev \
-    libsqlite3-dev \
     zlib1g-dev \
     python3-dev
 ```
@@ -50,7 +72,7 @@ sudo apt-get install -y \
 
 ```bash
 mkdir build && cd build
-cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
 ninja
 ```
 
@@ -88,6 +110,16 @@ int main() {
 ```cmake
 find_package(libcarla REQUIRED)
 target_link_libraries(your_target PRIVATE libcarla::carla_client)
+```
+
+### Linking Manually
+
+When linking manually, link in this order:
+```bash
+g++ your_code.cpp -o your_program \
+    -L/path/to/libcarla/lib \
+    -lcarla_client -lrpc -lRecast -lDetour -lDetourCrowd \
+    -lboost_filesystem -lboost_system -lpng -ljpeg -lz -lpthread
 ```
 
 ### Python
