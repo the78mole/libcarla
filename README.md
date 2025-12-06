@@ -38,9 +38,45 @@ Each release includes:
 
 ## Installation
 
-### Pre-built Releases
+### Debian Packages (Recommended)
 
-Download the latest release from the [Releases](https://github.com/the78mole/libcarla/releases) page.
+The easiest way to install LibCarla is using the pre-built Debian packages from the [Releases](https://github.com/the78mole/libcarla/releases) page:
+
+```bash
+# Download the appropriate package for your system
+# Ubuntu 22.04 amd64
+wget https://github.com/the78mole/libcarla/releases/download/v0.9.16/libcarla_0.9.16-ubuntu22.04_amd64.deb
+
+# Ubuntu 24.04 amd64
+wget https://github.com/the78mole/libcarla/releases/download/v0.9.16/libcarla_0.9.16-ubuntu24.04_amd64.deb
+
+# Install the package
+sudo dpkg -i libcarla_*.deb
+
+# Install any missing dependencies
+sudo apt-get install -f
+```
+
+**Available packages:**
+
+- `libcarla_<version>-ubuntu22.04_amd64.deb` - Ubuntu 22.04 x86_64
+- `libcarla_<version>-ubuntu24.04_amd64.deb` - Ubuntu 24.04 x86_64
+- `libcarla_<version>-ubuntu22.04_arm64.deb` - Ubuntu 22.04 ARM64
+- `libcarla_<version>-ubuntu24.04_arm64.deb` - Ubuntu 24.04 ARM64
+
+The Debian package installs:
+
+- Libraries to `/usr/lib`
+- Headers to `/usr/include/carla`
+- CMake config to `/usr/lib/cmake/libcarla`
+
+**Package Details:**
+
+The Debian packages are automatically created during the CI/CD build process from the compiled binaries. Each package includes proper dependency management and post-installation scripts for `ldconfig` integration.
+
+### Pre-built Archives
+
+Alternatively, download archive releases from the [Releases](https://github.com/the78mole/libcarla/releases) page.
 
 Each archive contains:
 
@@ -163,7 +199,8 @@ print(f"CARLA Version: {carla.__version__}")
 This project uses GitHub Actions for automated building and releasing:
 
 - **Automated Builds**: Every push and pull request triggers builds for all supported platforms
-- **Artifact Upload**: Build artifacts are automatically uploaded for each PR
+- **Artifact Upload**: Build artifacts (tar.gz and .deb) are automatically uploaded for each PR
+- **Debian Packages**: Automatically created from build artifacts for easy installation
 - **Release Notes**: Automatic generation of release notes with download links
 - **Semantic Versioning**: Automatic version bumping based on commit messages
 
@@ -171,9 +208,12 @@ This project uses GitHub Actions for automated building and releasing:
 
 The CI/CD pipeline builds for:
 
-- Ubuntu 22.04 x86_64 (native)
-- Ubuntu 24.04 x86_64 (native)
-- Ubuntu 24.04 arm64 (cross-compile with gcc-aarch64-linux-gnu)
+- Ubuntu 22.04 x86_64 (native) + Debian package
+- Ubuntu 24.04 x86_64 (native) + Debian package
+- Ubuntu 22.04 arm64 (cross-compile) + Debian package
+- Ubuntu 24.04 arm64 (cross-compile) + Debian package
+
+Each build produces both a `.tar.gz` archive and a `.deb` package from the same compiled binaries.
 
 ### Testing Locally with act
 
