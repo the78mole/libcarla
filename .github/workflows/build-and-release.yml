@@ -251,6 +251,11 @@ jobs:
           # Completely replace sources.list for proper multi-arch support
           sudo mv /etc/apt/sources.list /etc/apt/sources.list.backup
           
+          # Ubuntu 24.04+ uses DEB822 format in sources.list.d, disable it to avoid conflicts
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.disabled
+          fi
+          
           CODENAME=$(lsb_release -cs)
           
           # Create new sources.list with proper architecture tags
