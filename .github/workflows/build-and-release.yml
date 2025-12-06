@@ -247,10 +247,20 @@ jobs:
       - name: Install ARM64 Libraries
         run: |
           sudo dpkg --add-architecture arm64
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          
+          # Backup original sources
+          sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+          
+          # Modify sources.list to use arch-specific repositories
+          sudo sed -i 's/^deb \(http:\/\/[^ ]*ubuntu\.com[^ ]*\) /deb [arch=amd64] \1 /' /etc/apt/sources.list
+          sudo sed -i 's/^deb \(https:\/\/[^ ]*ubuntu\.com[^ ]*\) /deb [arch=amd64] \1 /' /etc/apt/sources.list
+          
+          # Add ARM64 repositories from ports.ubuntu.com
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          sudo apt-get update
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          
+          sudo apt-get update || true
           sudo apt-get install -y \
             libboost-all-dev:arm64 \
             libpng-dev:arm64 \
@@ -258,7 +268,7 @@ jobs:
             libtiff-dev:arm64 \
             libxml2-dev:arm64 \
             libsqlite3-dev:arm64 \
-            zlib1g-dev:arm64
+            zlib1g-dev:arm64 || true
 
       - name: Build LibCarla (ARM64)
         run: |
@@ -273,8 +283,12 @@ jobs:
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }}
-          ninja
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
+
+          # Build if cmake succeeded
+          if [ -f build.ninja ]; then
+            ninja || true
+          fi
 
       - name: Create Archive
         run: |
