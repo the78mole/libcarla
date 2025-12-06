@@ -1,5 +1,10 @@
 # LibCarla
 
+[![Build Status](https://github.com/the78mole/libcarla/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/the78mole/libcarla/actions/workflows/build-and-release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Release](https://img.shields.io/github/v/release/the78mole/libcarla)](https://github.com/the78mole/libcarla/releases)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/the78mole/libcarla)
+
 A standalone repository containing only the LibCarla library from the [CARLA Simulator](https://github.com/carla-simulator/carla) (version 0.9.16).
 
 ## Overview
@@ -9,19 +14,23 @@ This repository provides a standalone build of LibCarla, the core C++ library us
 ## Supported Platforms
 
 - **Operating Systems**: Ubuntu 22.04, Ubuntu 24.04
-- **Architectures**: x86_64, arm64
+- **Architectures**:
+  - x86_64 (native build)
+  - arm64 (cross-compilation)
 
 ## Features
 
 - **Self-contained static libraries** - All dependencies are statically linked for easy deployment
-- Pre-built LibCarla binaries for multiple platforms
-- Python wheels with precompiled binaries
-- Semantic versioning with automatic patch version bumps
-- Cross-platform build support
+- **Automated CI/CD pipeline** - GitHub Actions for building and releasing
+- **Multi-platform support** - Pre-built binaries for Ubuntu 22.04/24.04 on x86_64 and arm64
+- **Semantic versioning** - Automatic version management with dev/release tags
+- **Pull request previews** - Automatic artifact builds and release notes for PRs
+- Cross-platform build support with CMake and Ninja
 
 ## Release Contents
 
 Each release includes:
+
 - `libcarla_client.a` - Main LibCarla client static library
 - `librpc.a` - RPC library for client-server communication
 - `libRecast.a`, `libDetour.a`, `libDetourCrowd.a` - Navigation mesh libraries
@@ -34,7 +43,8 @@ Each release includes:
 Download the latest release from the [Releases](https://github.com/the78mole/libcarla/releases) page.
 
 Each archive contains:
-```
+
+```text
 libcarla-<version>-<platform>/
 ├── lib/
 │   ├── libcarla_client.a
@@ -68,11 +78,23 @@ sudo apt-get install -y \
     python3-dev
 ```
 
-#### Build
+#### Build Steps
 
 ```bash
+# Clone the repository
+git clone https://github.com/the78mole/libcarla.git
+cd libcarla
+
+# Create build directory
 mkdir build && cd build
-cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
+
+# Configure with CMake
+cmake .. -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DLIBCARLA_VERSION=0.9.16
+
+# Build
 ninja
 ```
 
@@ -81,6 +103,12 @@ ninja
 ```bash
 sudo ninja install
 ```
+
+This will install:
+
+- Libraries to `/usr/local/lib`
+- Headers to `/usr/local/include/carla`
+- CMake config to `/usr/local/lib/cmake/libcarla`
 
 ### Python Package
 
@@ -115,6 +143,7 @@ target_link_libraries(your_target PRIVATE libcarla::carla_client)
 ### Linking Manually
 
 When linking manually, link in this order:
+
 ```bash
 g++ your_code.cpp -o your_program \
     -L/path/to/libcarla/lib \
@@ -129,6 +158,39 @@ import carla
 print(f"CARLA Version: {carla.__version__}")
 ```
 
+## CI/CD Pipeline
+
+This project uses GitHub Actions for automated building and releasing:
+
+- **Automated Builds**: Every push and pull request triggers builds for all supported platforms
+- **Artifact Upload**: Build artifacts are automatically uploaded for each PR
+- **Release Notes**: Automatic generation of release notes with download links
+- **Semantic Versioning**: Automatic version bumping based on commit messages
+
+### Build Matrix
+
+The CI/CD pipeline builds for:
+
+- Ubuntu 22.04 x86_64 (native)
+- Ubuntu 24.04 x86_64 (native)
+- Ubuntu 24.04 arm64 (cross-compile with gcc-aarch64-linux-gnu)
+
+### Testing Locally with act
+
+You can test the GitHub Actions workflow locally using [act](https://github.com/nektos/act):
+
+```bash
+# Install act
+gh extension install https://github.com/nektos/gh-act
+
+# Run a specific job
+gh act pull_request --job build-libcarla \
+  -P ubuntu-22.04=catthehacker/ubuntu:act-22.04 \
+  --matrix os:ubuntu-22.04 \
+  --matrix arch:x86_64 \
+  --artifact-server-path /tmp/artifacts
+```
+
 ## Versioning
 
 This project uses [Semantic Versioning](https://semver.org/). The version is automatically generated using [paulhatch/semantic-version](https://github.com/PaulHatch/semantic-version) GitHub Action.
@@ -136,6 +198,7 @@ This project uses [Semantic Versioning](https://semver.org/). The version is aut
 - **MAJOR** version bumps when you include `(MAJOR)` in commit message
 - **MINOR** version bumps when you include `(MINOR)` in commit message
 - **PATCH** version bumps with every commit
+- Development versions use `.devN` suffix for PR builds
 
 ## License
 
@@ -143,7 +206,49 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 The original CARLA Simulator is also released under the MIT License. See the [CARLA License](https://github.com/carla-simulator/carla/blob/master/LICENSE) for details.
 
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Push to your fork and submit a Pull Request
+5. The CI/CD pipeline will automatically build and test your changes
+6. Review the generated artifacts and release notes in the PR comments
+
+## Known Issues
+
+- Ubuntu 22.04 builds require `#include <mutex>` in some source files due to older compiler behavior
+- Cross-compilation for arm64 requires `gcc-aarch64-linux-gnu` toolchain
+
+## Troubleshooting
+
+### Build Errors
+
+If you encounter build errors, ensure you have all prerequisites installed:
+
+```bash
+# Update package lists
+sudo apt-get update
+
+# Install all dependencies
+sudo apt-get install -y build-essential cmake ninja-build clang \
+    libboost-all-dev libpng-dev libjpeg-dev libtiff-dev zlib1g-dev python3-dev
+```
+
+### Cross-compilation for ARM64
+
+For cross-compilation, install the ARM64 toolchain:
+
+```bash
+sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+```
+
 ## Acknowledgments
 
 - [CARLA Simulator](https://github.com/carla-simulator/carla) - The autonomous driving simulator
 - [Computer Vision Center (CVC)](http://www.cvc.uab.es/) - Universitat Autònoma de Barcelona (UAB)
+- All contributors who have helped improve this project
