@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Set CMake policies
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)  # Use BoostConfig.cmake if available
+endif()
+
 # Set version from environment variable or default
 if(DEFINED ENV{LIBCARLA_VERSION})
     set(LIBCARLA_VERSION_STRING $ENV{LIBCARLA_VERSION})
@@ -41,6 +46,9 @@ option(LIBCARLA_BUILD_PYTHON "Build Python bindings" OFF)
 # Include FetchContent for external dependencies
 include(FetchContent)
 
+# Suppress warnings from external dependencies during CMake configuration
+set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
+
 # Fetch rpclib (provides msgpack)
 FetchContent_Declare(
     rpclib
@@ -64,6 +72,9 @@ set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # Make dependencies available
 FetchContent_MakeAvailable(rpclib recast)
+
+# Re-enable deprecation warnings for our own project
+set(CMAKE_WARN_DEPRECATED ON CACHE BOOL "" FORCE)
 
 # Find required packages - prefer static libraries
 set(Boost_USE_STATIC_LIBS ON)

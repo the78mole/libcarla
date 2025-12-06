@@ -273,12 +273,8 @@ jobs:
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
-
-          # Build if cmake succeeded
-          if [ -f build.ninja ]; then
-            ninja || true
-          fi
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }}
+          ninja
 
       - name: Create Archive
         run: |
