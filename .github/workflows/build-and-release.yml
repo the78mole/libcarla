@@ -277,9 +277,6 @@ jobs:
           
           # Set up environment for ARM64 cross-compilation
           export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
-          export BOOST_ROOT=/usr
-          export BOOST_INCLUDEDIR=/usr/include
-          export BOOST_LIBRARYDIR=/usr/lib/aarch64-linux-gnu
           
           cmake .. \
             -G Ninja \
@@ -290,16 +287,25 @@ jobs:
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DCMAKE_FIND_ROOT_PATH="/usr/aarch64-linux-gnu;/usr/lib/aarch64-linux-gnu;/usr/include/aarch64-linux-gnu" \
+            -DCMAKE_SYSROOT=/usr/aarch64-linux-gnu \
+            -DCMAKE_FIND_ROOT_PATH="/usr/aarch64-linux-gnu;/usr" \
             -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
-            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
-            -DBoost_NO_SYSTEM_PATHS=ON \
-            -DBoost_NO_BOOST_CMAKE=ON \
-            -DBOOST_ROOT=/usr \
-            -DBOOST_INCLUDEDIR=/usr/include \
-            -DBOOST_LIBRARYDIR=/usr/lib/aarch64-linux-gnu \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH \
+            -DBoost_INCLUDE_DIR=/usr/include \
+            -DBoost_LIBRARY_DIR_RELEASE=/usr/lib/aarch64-linux-gnu \
+            -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib/aarch64-linux-gnu/libboost_filesystem.a \
+            -DBoost_SYSTEM_LIBRARY_RELEASE=/usr/lib/aarch64-linux-gnu/libboost_system.a \
+            -DBoost_NO_SYSTEM_PATHS=OFF \
+            -DBoost_USE_MULTITHREADED=ON \
+            -DZLIB_LIBRARY=/usr/lib/aarch64-linux-gnu/libz.a \
+            -DZLIB_INCLUDE_DIR=/usr/include \
+            -DPNG_LIBRARY=/usr/lib/aarch64-linux-gnu/libpng16.a \
+            -DPNG_PNG_INCLUDE_DIR=/usr/include \
+            -DJPEG_LIBRARY=/usr/lib/aarch64-linux-gnu/libjpeg.a \
+            -DJPEG_INCLUDE_DIR=/usr/include \
+            -Wno-dev \
             -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
 
           # Build if cmake succeeded
