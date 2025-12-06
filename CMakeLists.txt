@@ -47,7 +47,7 @@ option(LIBCARLA_BUILD_PYTHON "Build Python bindings" OFF)
 include(FetchContent)
 
 # Suppress warnings from external dependencies during CMake configuration
-set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
+set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "Disable deprecation warnings for external dependencies" FORCE)
 
 # Fetch rpclib (provides msgpack)
 FetchContent_Declare(
@@ -74,7 +74,7 @@ set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(rpclib recast)
 
 # Re-enable deprecation warnings for our own project
-set(CMAKE_WARN_DEPRECATED ON CACHE BOOL "" FORCE)
+set(CMAKE_WARN_DEPRECATED ON CACHE BOOL "Re-enable deprecation warnings for project code" FORCE)
 
 # Find required packages - prefer static libraries
 set(Boost_USE_STATIC_LIBS ON)
