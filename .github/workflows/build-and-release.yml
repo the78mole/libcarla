@@ -260,7 +260,7 @@ jobs:
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
           
-          sudo apt-get update || true
+          sudo apt-get update
           sudo apt-get install -y \
             libboost-all-dev:arm64 \
             libpng-dev:arm64 \
@@ -268,7 +268,12 @@ jobs:
             libtiff-dev:arm64 \
             libxml2-dev:arm64 \
             libsqlite3-dev:arm64 \
-            zlib1g-dev:arm64 || true
+            zlib1g-dev:arm64
+          
+          # Verify Boost installation
+          echo "=== Verifying Boost ARM64 installation ==="
+          ls -la /usr/include/boost/version.hpp || echo "WARNING: Boost headers not found"
+          ls -la /usr/lib/aarch64-linux-gnu/libboost_*.a | head -5 || echo "WARNING: Boost ARM64 libraries not found"
 
       - name: Build LibCarla (ARM64)
         run: |
@@ -305,12 +310,9 @@ jobs:
             -DJPEG_LIBRARY=/usr/lib/aarch64-linux-gnu/libjpeg.a \
             -DJPEG_INCLUDE_DIR=/usr/include \
             -Wno-dev \
-            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }}
 
-          # Build if cmake succeeded
-          if [ -f build.ninja ]; then
-            ninja || true
-          fi
+          ninja
 
       - name: Create Archive
         run: |
