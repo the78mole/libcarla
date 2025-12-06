@@ -291,9 +291,11 @@ jobs:
 
       - name: Post Release Notes Comment
         uses: actions/github-script@v7
+        env:
+          RELEASE_NOTES: ${{ steps.release_notes.outputs.notes }}
         with:
           script: |
-            const releaseNotes = `${{ steps.release_notes.outputs.notes }}`;
+            const releaseNotes = process.env.RELEASE_NOTES;
             
             // Find existing release notes comment
             const comments = await github.rest.issues.listComments({
