@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <thread>
+#include <mutex>
 #include <iomanip>
 #include <queue>
 #include <set>
