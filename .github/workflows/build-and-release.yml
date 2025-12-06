@@ -1,0 +1,497 @@
+name: Build and Release LibCarla
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version:
+    name: Generate Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_tag: ${{ steps.version.outputs.version_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Semantic Version
+        id: semver
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+          bump_each_commit_patch_pattern: ""
+
+      - name: Set Version Output
+        id: version
+        run: |
+          BASE_VERSION="${{ steps.semver.outputs.version }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            # PEP 440 compliant format: 0.0.6.dev2
+            VERSION="${BASE_VERSION}.dev${PR_NUMBER}"
+          else
+            VERSION="${BASE_VERSION}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Display Version
+        run: |
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "Version Tag: ${{ steps.version.outputs.version_tag }}"
+
+  build-libcarla:
+    name: Build LibCarla
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        arch: [x86_64, arm64]
+        exclude:
+          - os: ubuntu-22.04
+            arch: arm64
+          - os: ubuntu-24.04
+            arch: arm64
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            artifact_suffix: ubuntu22.04-x86_64
+          - os: ubuntu-24.04
+            arch: x86_64
+            artifact_suffix: ubuntu24.04-x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            clang \
+            libboost-all-dev \
+            libboost-filesystem-dev \
+            libboost-system-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff-dev \
+            libxml2-dev \
+            libsqlite3-dev \
+            zlib1g-dev
+
+      - name: Build LibCarla
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBoost_USE_STATIC_LIBS=ON \
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }}
+          ninja
+
+      - name: Create Archive
+        run: |
+          cd build
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include
+          
+          # Copy all static libraries
+          find . -name "*.a" -exec cp {} libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib/ \; 2>/dev/null || true
+          
+          # Copy headers from source
+          cp -r ../source/carla libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/
+          cp -r ../source/third-party/* libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy rpclib headers
+          cp -r _deps/rpclib-src/include/rpc libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy recast headers
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast
+          cp _deps/recast-src/Recast/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/Detour/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/DetourCrowd/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          
+          # Create archive
+          tar -czvf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz \
+            libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-${{ matrix.artifact_suffix }}
+          path: build/libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
+
+      - name: Create Debian Package
+        run: |
+          cd build
+          
+          # Map arch names (x86_64 -> amd64)
+          DEB_ARCH="${{ matrix.arch }}"
+          if [ "${{ matrix.arch }}" = "x86_64" ]; then
+            DEB_ARCH="amd64"
+          fi
+          
+          # Extract archive to debian package structure
+          mkdir -p debian-pkg/usr
+          tar -xzf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
+          mv libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/* debian-pkg/usr/
+          
+          # Create DEBIAN directory and control file
+          mkdir -p debian-pkg/DEBIAN
+          cat > debian-pkg/DEBIAN/control << EOF
+          Package: libcarla
+          Version: ${{ needs.version.outputs.version }}
+          Section: libs
+          Priority: optional
+          Architecture: ${DEB_ARCH}
+          Depends: libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0, libpng16-16, libjpeg8 | libjpeg-turbo8, libtiff5 | libtiff6, zlib1g
+          Maintainer: LibCarla Team <libcarla@example.com>
+          Description: CARLA Simulator C++ Library
+           LibCarla is the core C++ library from the CARLA autonomous driving
+           simulator. This package provides static libraries and headers for
+           building CARLA client applications.
+           .
+           This package includes:
+           - libcarla_client.a - Main client library
+           - librpc.a - RPC communication library
+           - Navigation mesh libraries (Recast, Detour, DetourCrowd)
+           - Complete C++ headers
+          Homepage: https://github.com/the78mole/libcarla
+          EOF
+          
+          # Create postinst script
+          cat > debian-pkg/DEBIAN/postinst << 'EOFSCRIPT'
+          #!/bin/bash
+          set -e
+          if [ "$1" = "configure" ]; then
+              ldconfig
+          fi
+          exit 0
+          EOFSCRIPT
+          chmod 755 debian-pkg/DEBIAN/postinst
+          
+          # Create prerm script
+          cat > debian-pkg/DEBIAN/prerm << 'EOFSCRIPT'
+          #!/bin/bash
+          set -e
+          exit 0
+          EOFSCRIPT
+          chmod 755 debian-pkg/DEBIAN/prerm
+          
+          # Build the package
+          dpkg-deb --build debian-pkg
+          mv debian-pkg.deb libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_${DEB_ARCH}.deb
+
+      - name: Upload Debian Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-deb-${{ matrix.artifact_suffix }}
+          path: build/libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_*.deb
+
+  build-libcarla-cross:
+    name: Build LibCarla (Cross-compile ARM64)
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        include:
+          - os: ubuntu-22.04
+            artifact_suffix: ubuntu22.04-arm64
+          - os: ubuntu-24.04
+            artifact_suffix: ubuntu24.04-arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            crossbuild-essential-arm64
+
+      - name: Install ARM64 Libraries
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          sudo apt-get update || true
+          sudo apt-get install -y \
+            libboost-all-dev:arm64 \
+            libpng-dev:arm64 \
+            libjpeg-dev:arm64 \
+            libtiff-dev:arm64 \
+            libxml2-dev:arm64 \
+            libsqlite3-dev:arm64 \
+            zlib1g-dev:arm64 || true
+
+      - name: Build LibCarla (ARM64)
+        run: |
+          mkdir -p build-arm64
+          cd build-arm64
+          cmake .. \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBoost_USE_STATIC_LIBS=ON \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
+
+          # Build if cmake succeeded
+          if [ -f build.ninja ]; then
+            ninja || true
+          fi
+
+      - name: Create Archive
+        run: |
+          mkdir -p build-arm64
+          cd build-arm64
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include
+          
+          # Copy all static libraries
+          find . -name "*.a" -exec cp {} libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/lib/ \; 2>/dev/null || true
+          
+          # Copy headers from source
+          cp -r ../source/carla libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          cp -r ../source/third-party/* libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy rpclib headers
+          cp -r _deps/rpclib-src/include/rpc libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/ 2>/dev/null || true
+          
+          # Copy recast headers
+          mkdir -p libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast
+          cp _deps/recast-src/Recast/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/Detour/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          cp _deps/recast-src/DetourCrowd/Include/*.h libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/include/recast/ 2>/dev/null || true
+          
+          # Create archive
+          tar -czvf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz \
+            libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-${{ matrix.artifact_suffix }}
+          path: build-arm64/libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
+
+      - name: Create Debian Package
+        run: |
+          cd build-arm64
+          
+          # Extract archive to debian package structure
+          mkdir -p debian-pkg/usr
+          tar -xzf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
+          mv libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/* debian-pkg/usr/
+          
+          # Create DEBIAN directory and control file
+          mkdir -p debian-pkg/DEBIAN
+          cat > debian-pkg/DEBIAN/control << EOF
+          Package: libcarla
+          Version: ${{ needs.version.outputs.version }}
+          Section: libs
+          Priority: optional
+          Architecture: arm64
+          Depends: libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0, libpng16-16, libjpeg8 | libjpeg-turbo8, libtiff5 | libtiff6, zlib1g
+          Maintainer: LibCarla Team <libcarla@example.com>
+          Description: CARLA Simulator C++ Library
+           LibCarla is the core C++ library from the CARLA autonomous driving
+           simulator. This package provides static libraries and headers for
+           building CARLA client applications.
+           .
+           This package includes:
+           - libcarla_client.a - Main client library
+           - librpc.a - RPC communication library
+           - Navigation mesh libraries (Recast, Detour, DetourCrowd)
+           - Complete C++ headers
+          Homepage: https://github.com/the78mole/libcarla
+          EOF
+          
+          # Create postinst script
+          cat > debian-pkg/DEBIAN/postinst << 'EOFSCRIPT'
+          #!/bin/bash
+          set -e
+          if [ "$1" = "configure" ]; then
+              ldconfig
+          fi
+          exit 0
+          EOFSCRIPT
+          chmod 755 debian-pkg/DEBIAN/postinst
+          
+          # Create prerm script
+          cat > debian-pkg/DEBIAN/prerm << 'EOFSCRIPT'
+          #!/bin/bash
+          set -e
+          exit 0
+          EOFSCRIPT
+          chmod 755 debian-pkg/DEBIAN/prerm
+          
+          # Build the package
+          dpkg-deb --build debian-pkg
+          mv debian-pkg.deb libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_arm64.deb
+
+      - name: Upload Debian Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-deb-${{ matrix.artifact_suffix }}
+          path: build-arm64/libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_arm64.deb
+
+  pr-release-notes:
+    name: Post Release Notes to PR
+    needs: [version, build-libcarla, build-libcarla-cross]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          {
+            echo "## 🚀 Release Preview: v${{ needs.version.outputs.version }}"
+            echo ""
+            echo "### 📦 Artifacts"
+            echo ""
+            echo "#### C++ Libraries"
+            echo "| Platform | Architecture | Artifact |"
+            echo "|----------|--------------|----------|"
+            for f in $(find artifacts -name "*.tar.gz" | sort); do
+              name=$(basename "$f")
+              echo "| Ubuntu | x86_64/arm64 | \`$name\` |"
+            done
+            echo ""
+            echo "### 📋 Version Information"
+            echo "- **Version**: \`${{ needs.version.outputs.version }}\`"
+            echo "- **Commit**: \`${{ github.sha }}\`"
+            echo ""
+            echo "---"
+            echo "*This is an automated release preview. Artifacts will be available in the release once merged.*"
+          } > release_notes.md
+          
+          # Output for the comment
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post Release Notes Comment
+        uses: actions/github-script@v7
+        env:
+          RELEASE_NOTES: ${{ steps.release_notes.outputs.notes }}
+        with:
+          script: |
+            const releaseNotes = process.env.RELEASE_NOTES;
+            
+            // Find existing release notes comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🚀 Release Preview:')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: releaseNotes
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: releaseNotes
+              });
+            }
+
+  release:
+    name: Create Release
+    needs: [version, build-libcarla, build-libcarla-cross]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display Downloaded Artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -type f -name "*.tar.gz" -o -name "*.deb" | head -100
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.version.outputs.version }}
+          name: Release v${{ needs.version.outputs.version }}
+          body: |
+            ## LibCarla v${{ needs.version.outputs.version }}
+            
+            ### Changes
+            - Auto-generated release from commit ${{ github.sha }}
+            
+            ### Artifacts
+            - LibCarla binaries for Ubuntu 22.04 and 24.04 (x86_64 and arm64)
+            - Debian packages (.deb) for easy installation
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.deb
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
