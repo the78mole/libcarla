@@ -268,8 +268,9 @@ jobs:
           EOF
           
           sudo apt-get update
-          sudo apt-get install -y \
-            libboost-all-dev:arm64 \
+          sudo apt-get install -y --no-install-recommends \
+            libboost-filesystem-dev:arm64 \
+            libboost-system-dev:arm64 \
             libpng-dev:arm64 \
             libjpeg-dev:arm64 \
             libtiff-dev:arm64 \
