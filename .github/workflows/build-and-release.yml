@@ -247,23 +247,55 @@ jobs:
       - name: Install ARM64 Libraries
         run: |
           sudo dpkg --add-architecture arm64
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          sudo apt-get update || true
-          sudo apt-get install -y \
-            libboost-all-dev:arm64 \
+          
+          # Completely replace sources.list for proper multi-arch support
+          sudo mv /etc/apt/sources.list /etc/apt/sources.list.backup
+          
+          # Ubuntu 24.04+ uses DEB822 format in sources.list.d, disable it to avoid conflicts
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.disabled
+          fi
+          
+          CODENAME=$(lsb_release -cs)
+          
+          # Create new sources.list with proper architecture tags
+          cat <<EOF | sudo tee /etc/apt/sources.list
+          # AMD64 repositories
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME-updates main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $CODENAME-backports main restricted universe multiverse
+          deb [arch=amd64] http://security.ubuntu.com/ubuntu $CODENAME-security main restricted universe multiverse
+          
+          # ARM64 repositories from ports
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-security main restricted universe multiverse
+          EOF
+          
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libboost-filesystem-dev:arm64 \
+            libboost-system-dev:arm64 \
             libpng-dev:arm64 \
             libjpeg-dev:arm64 \
             libtiff-dev:arm64 \
             libxml2-dev:arm64 \
             libsqlite3-dev:arm64 \
-            zlib1g-dev:arm64 || true
+            zlib1g-dev:arm64
+          
+          # Verify Boost installation
+          echo "=== Verifying Boost ARM64 installation ==="
+          ls -la /usr/include/boost/version.hpp || echo "WARNING: Boost headers not found"
+          ls -la /usr/lib/aarch64-linux-gnu/libboost_*.a | head -5 || echo "WARNING: Boost ARM64 libraries not found"
 
       - name: Build LibCarla (ARM64)
         run: |
           mkdir -p build-arm64
           cd build-arm64
+          
+          # Set up environment for ARM64 cross-compilation
+          export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
+          
           cmake .. \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -273,12 +305,27 @@ jobs:
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }} || true
+            -DCMAKE_FIND_ROOT_PATH="/usr/lib/aarch64-linux-gnu;/usr" \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH \
+            -DBoost_INCLUDE_DIR=/usr/include \
+            -DBoost_LIBRARY_DIR=/usr/lib/aarch64-linux-gnu \
+            -DBoost_FILESYSTEM_LIBRARY=/usr/lib/aarch64-linux-gnu/libboost_filesystem.a \
+            -DBoost_SYSTEM_LIBRARY=/usr/lib/aarch64-linux-gnu/libboost_system.a \
+            -DBoost_NO_SYSTEM_PATHS=OFF \
+            -DBoost_USE_MULTITHREADED=ON \
+            -DZLIB_LIBRARY=/usr/lib/aarch64-linux-gnu/libz.a \
+            -DZLIB_INCLUDE_DIR=/usr/include \
+            -DPNG_LIBRARY=/usr/lib/aarch64-linux-gnu/libpng16.a \
+            -DPNG_PNG_INCLUDE_DIR=/usr/include \
+            -DJPEG_LIBRARY=/usr/lib/aarch64-linux-gnu/libjpeg.a \
+            -DJPEG_INCLUDE_DIR=/usr/include \
+            -Wno-dev \
+            -DLIBCARLA_VERSION=${{ needs.version.outputs.version }}
 
-          # Build if cmake succeeded
-          if [ -f build.ninja ]; then
-            ninja || true
-          fi
+          ninja
 
       - name: Create Archive
         run: |
