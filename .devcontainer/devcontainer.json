@@ -21,6 +21,11 @@
 			}
 		}
 	},
+	"mounts": [
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.zshrc,target=/home/vscode/.zshrc,type=bind,consistency=cached",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.oh-my-zsh,target=/home/vscode/.oh-my-zsh,type=bind,consistency=cached",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.local,target=/home/vscode/.local,type=bind,consistency=cached"
+	],
 	"runArgs": [
 		"--network=host"
 	],

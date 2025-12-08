@@ -271,12 +271,111 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Development Workflow
 
+#### Using DevContainer (Recommended)
+
+The easiest way to get started with development is using the VS Code DevContainer:
+
+1. **Prerequisites**:
+   - [VS Code](https://code.visualstudio.com/) with [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+   - [Docker](https://www.docker.com/) installed and running
+
+2. **Getting Started**:
+   ```bash
+   # Clone the repository
+   git clone https://github.com/the78mole/libcarla.git
+   cd libcarla
+   ```
+
+3. **Open in DevContainer**:
+   - Open the repository in VS Code
+   - Press `F1` and select "Dev Containers: Reopen in Container"
+   - The container will automatically build and configure:
+     - Install all build dependencies
+     - Configure the LibCarla APT repository
+     - Build LibCarla and install it locally
+     - Set up a complete development environment
+
+4. **Develop**:
+   - The workspace is mounted at `/workspace`
+   - LibCarla is pre-built and installed
+   - All build tools and dependencies are ready to use
+   - ARM64 cross-compilation toolchain is pre-configured
+   - You can rebuild with `build-libcarla.sh` if needed
+
+5. **Test Your Changes**:
+   ```bash
+   # Rebuild libcarla after making changes
+   sudo build-libcarla.sh /workspace
+   
+   # Build examples (native x86_64)
+   cd /workspace/examples/simple_client
+   mkdir -p build && cd build
+   cmake .. && make
+   ```
+
+6. **Cross-Compilation for ARM64**:
+
+   The DevContainer includes a complete ARM64 cross-compilation toolchain. Here's how to build for ARM64 targets:
+
+   **Static Binary (recommended for deployment):**
+   ```bash
+   cd /workspace/examples/simple_client
+   mkdir -p build-arm64-static && cd build-arm64-static
+   
+   cmake .. \
+     -DCMAKE_TOOLCHAIN_FILE=/workspace/cmake/aarch64-toolchain.cmake \
+     -DCMAKE_BUILD_TYPE=Release \
+     -DBUILD_SHARED_LIBS=OFF
+   
+   make
+   
+   # Verify the binary
+   file simple_client
+   # Output: simple_client: ELF 64-bit LSB executable, ARM aarch64, statically linked
+   ```
+
+   **Dynamic Binary (requires LibCarla installed on target):**
+   ```bash
+   cd /workspace/examples/simple_client
+   mkdir -p build-arm64-dynamic && cd build-arm64-dynamic
+   
+   cmake .. \
+     -DCMAKE_TOOLCHAIN_FILE=/workspace/cmake/aarch64-toolchain.cmake \
+     -DCMAKE_BUILD_TYPE=Release \
+     -DBUILD_SHARED_LIBS=ON
+   
+   make
+   
+   # Verify the binary
+   file simple_client
+   # Output: simple_client: ELF 64-bit LSB executable, ARM aarch64, dynamically linked
+   
+   # Check dependencies
+   aarch64-linux-gnu-objdump -p simple_client | grep NEEDED
+   ```
+
+   **Notes:**
+   - Static binaries are larger but don't require LibCarla on the target system
+   - Dynamic binaries are smaller but require `libcarla` installed via APT on ARM64 target
+   - Both approaches work on Ubuntu 22.04/24.04 ARM64 (e.g., Raspberry Pi 4/5, AWS Graviton)
+   - Test ARM64 binaries on real hardware or use QEMU: `qemu-aarch64-static -L /usr/aarch64-linux-gnu ./simple_client`
+
+#### Manual Development Setup
+
+If you prefer not to use DevContainer:
+
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Push to your fork and submit a Pull Request
-5. The CI/CD pipeline will automatically build and test your changes
-6. Review the generated artifacts and release notes in the PR comments
+3. Install dependencies (see "Building from Source" section)
+4. Make your changes
+5. Test locally
+6. Push to your fork and submit a Pull Request
+
+#### Continuous Integration
+
+- The CI/CD pipeline will automatically build and test your changes
+- Review the generated artifacts and release notes in the PR comments
+- All platforms (Ubuntu 22.04/24.04, x86_64/arm64) are tested automatically
 
 ## Known Issues
 
