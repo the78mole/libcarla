@@ -94,10 +94,11 @@ jobs:
           # Copy public key to repository root
           cp ../public.key . || echo "Warning: Could not copy public key"
 
-          # Create installation instructions from template using envsubst
+          # Create documentation from templates using envsubst
           export REPO_OWNER="${{ github.repository_owner }}"
           export REPO_NAME="${{ github.event.repository.name }}"
           envsubst < ../.github/apt-repo/README.md.template > README.md
+          envsubst < ../.github/apt-repo/index.html.template > index.html
 
       # 8. Configure git
       - name: Configure git

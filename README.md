@@ -3,6 +3,7 @@
 [![Build Status](https://github.com/the78mole/libcarla/actions/workflows/build-and-release.yml/badge.svg)](https://github.com/the78mole/libcarla/actions/workflows/build-and-release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub Release](https://img.shields.io/github/v/release/the78mole/libcarla)](https://github.com/the78mole/libcarla/releases)
+[![APT Repository](https://img.shields.io/badge/APT-Repository-blue)](https://the78mole.github.io/libcarla)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/the78mole/libcarla)
 
 A standalone repository containing only the LibCarla library from the [CARLA Simulator](https://github.com/carla-simulator/carla) (version 0.9.16).
@@ -38,9 +39,27 @@ Each release includes:
 
 ## Installation
 
-### Debian Packages (Recommended)
+### APT Repository (Recommended)
 
-The easiest way to install LibCarla is using the pre-built Debian packages from the [Releases](https://github.com/the78mole/libcarla/releases) page:
+The easiest way to install LibCarla is using our official APT repository:
+
+```bash
+# Add the repository GPG key
+curl -fsSL https://the78mole.github.io/libcarla/public.key | sudo gpg --dearmor -o /usr/share/keyrings/libcarla-archive-keyring.gpg
+
+# Add the repository
+echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/libcarla-archive-keyring.gpg] https://the78mole.github.io/libcarla stable main" | sudo tee /etc/apt/sources.list.d/libcarla.list
+
+# Update and install
+sudo apt-get update
+sudo apt-get install libcarla
+```
+
+For more details, visit the [APT Repository](https://the78mole.github.io/libcarla).
+
+### Debian Packages (Manual Installation)
+
+You can also download pre-built Debian packages directly from the [Releases](https://github.com/the78mole/libcarla/releases) page:
 
 ```bash
 # Download the appropriate package for your system

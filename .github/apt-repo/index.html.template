@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibCarla APT Repository</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        main {
+            padding: 2rem;
+        }
+        
+        .section {
+            margin-bottom: 2rem;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .code-block .comment {
+            color: #6a9955;
+        }
+        
+        .step {
+            margin: 1.5rem 0;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 2rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        ul {
+            margin-left: 2rem;
+            margin-top: 0.5rem;
+        }
+        
+        li {
+            margin: 0.5rem 0;
+        }
+        
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: #f5f5f5;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 LibCarla APT Repository</h1>
+            <p>Official CARLA Client Library Packages</p>
+        </header>
+        
+        <main>
+            <div class="section">
+                <h2>📦 Installation</h2>
+                
+                <div class="step">
+                    <h3><span class="step-number">1</span>Add the repository GPG key</h3>
+                    <div class="code-block">curl -fsSL https://${REPO_OWNER}.github.io/${REPO_NAME}/public.key | sudo gpg --dearmor -o /usr/share/keyrings/libcarla-archive-keyring.gpg</div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">2</span>Add the repository</h3>
+                    <div class="code-block">echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/libcarla-archive-keyring.gpg] https://${REPO_OWNER}.github.io/${REPO_NAME} stable main" | sudo tee /etc/apt/sources.list.d/libcarla.list</div>
+                </div>
+                
+                <div class="step">
+                    <h3><span class="step-number">3</span>Update and install</h3>
+                    <div class="code-block">sudo apt-get update<br>sudo apt-get install libcarla</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📋 Available Packages</h2>
+                <ul>
+                    <li><strong>libcarla</strong> - CARLA client library with headers and development files</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>🖥️ Supported Distributions</h2>
+                <ul>
+                    <li>Ubuntu 22.04 (amd64, arm64)</li>
+                    <li>Ubuntu 24.04 (amd64, arm64)</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>ℹ️ Repository Information</h2>
+                <ul>
+                    <li><strong>Origin:</strong> the78mole/libcarla</li>
+                    <li><strong>Components:</strong> main</li>
+                    <li><strong>Architectures:</strong> amd64, arm64</li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <strong>💡 Manual Download:</strong> You can also download .deb packages directly from the 
+                <a href="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases" target="_blank">GitHub Releases</a> page.
+            </div>
+            
+            <div class="warning-box">
+                <strong>⚠️ Note:</strong> This repository is for development purposes. Make sure you have the appropriate 
+                CARLA server version compatible with the client library.
+            </div>
+            
+            <div class="section">
+                <h2>🔍 Testing the Repository</h2>
+                <p>To verify the repository is working correctly:</p>
+                <div class="code-block">
+<span class="comment"># Check if the repository is accessible</span>
+curl -I https://${REPO_OWNER}.github.io/${REPO_NAME}/dists/stable/Release
+
+<span class="comment"># List available packages</span>
+apt-cache policy libcarla
+
+<span class="comment"># View package information</span>
+apt show libcarla
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>📚 <a href="https://github.com/${REPO_OWNER}/${REPO_NAME}" target="_blank">View on GitHub</a> | 
+            📖 <a href="README.md">Documentation</a> | 
+            🔑 <a href="public.key">GPG Public Key</a></p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">Maintained by <a href="https://github.com/${REPO_OWNER}" target="_blank">${REPO_OWNER}</a></p>
+        </footer>
+    </div>
+</body>
+</html>
