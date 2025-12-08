@@ -1,0 +1,5 @@
+Component: main
+Origin: the78mole/libcarla
+Label: LibCarla Repository
+Architecture: amd64
+Description: Official LibCarla APT Repository

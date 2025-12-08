@@ -1,0 +1,24 @@
+Package: libcarla
+Version: 0.0.19
+Architecture: arm64
+Depends: libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0, libpng16-16, libjpeg8 | libjpeg-turbo8, libtiff5 | libtiff6, zlib1g
+Maintainer: LibCarla Team <libcarla@example.com>
+Priority: optional
+Section: libs
+Filename: pool/main/libc/libcarla/libcarla_0.0.19_arm64.deb
+Size: 2412724
+SHA256: 567a82f669d75e8ebe2caa16df2e9b3ccd29caec638d51500f0dcf8a0787ff49
+SHA1: a4edcd4451384e52580d0c7e514894b58628e9ba
+MD5sum: 1b0f48cd1b1d7e608a9d5196a1448659
+Description: CARLA Simulator C++ Library
+ LibCarla is the core C++ library from the CARLA autonomous driving
+ simulator. This package provides static libraries and headers for
+ building CARLA client applications.
+ .
+ This package includes:
+ - libcarla_client.a - Main client library
+ - librpc.a - RPC communication library
+ - Navigation mesh libraries (Recast, Detour, DetourCrowd)
+ - Complete C++ headers
+Homepage: https://github.com/the78mole/libcarla
+

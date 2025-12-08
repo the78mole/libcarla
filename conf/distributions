@@ -1,0 +1,7 @@
+Origin: the78mole/libcarla
+Label: LibCarla Repository
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: Official LibCarla APT Repository
+SignWith: yes
