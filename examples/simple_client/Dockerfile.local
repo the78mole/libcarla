@@ -23,7 +23,7 @@ COPY *.deb /tmp/
 RUN dpkg -i /tmp/*.deb || apt-get install -f -y
 
 # Copy example source code
-COPY simple_client.cpp .
+COPY main.cpp .
 COPY CMakeLists.txt .
 
 # Build the example

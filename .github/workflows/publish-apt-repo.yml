@@ -1,0 +1,118 @@
+name: Publish APT Repository
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Download .deb files from the current release
+      - name: Download Release Assets
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          version: 'tags/${{ github.event.release.tag_name }}'
+          file: '.*\.deb'
+          regex: true
+          target: 'packages/'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Setup GPG
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      # 3. Export public key for users
+      - name: Export GPG public key
+        run: |
+          gpg --armor --export > public.key
+          echo "Public key exported to public.key"
+
+      # 4. Checkout gh-pages branch (or create if not exists)
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: public_repo
+          fetch-depth: 0
+        continue-on-error: true
+
+      # 5. Initialize gh-pages if it doesn't exist
+      - name: Initialize gh-pages branch if needed
+        run: |
+          if [ ! -d "public_repo/.git" ]; then
+            echo "Creating new gh-pages branch..."
+            mkdir -p public_repo
+            cd public_repo
+            git init
+            git checkout -b gh-pages
+            git remote add origin https://github.com/${{ github.repository }}.git
+          fi
+
+      # 6. Install reprepro
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      # 7. Update Repository
+      - name: Update Repository
+        working-directory: public_repo
+        run: |
+          # Ensure directory structure
+          mkdir -p conf
+          
+          # Copy configuration from template if it doesn't exist
+          if [ ! -f conf/distributions ]; then
+            echo "Creating repository configuration..."
+            cp ../.github/apt-repo/distributions conf/distributions
+          fi
+
+          # Add new .deb packages
+          for deb in ../packages/*.deb; do
+            if [ -f "$deb" ]; then
+              echo "Adding $deb..."
+              reprepro -b . includedeb stable "$deb" || echo "Failed to add $deb, continuing..."
+            fi
+          done
+
+          # Copy public key to repository root
+          cp ../public.key . || echo "Warning: Could not copy public key"
+
+          # Create installation instructions from template using envsubst
+          export REPO_OWNER="${{ github.repository_owner }}"
+          export REPO_NAME="${{ github.event.repository.name }}"
+          envsubst < ../.github/apt-repo/README.md.template > README.md
+
+      # 8. Configure git
+      - name: Configure git
+        working-directory: public_repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 9. Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public_repo
+          publish_branch: gh-pages
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Update APT repository - Release ${{ github.event.release.tag_name }}'
+
+      # 10. Summary
+      - name: Repository URL
+        run: |
+          echo "::notice title=APT Repository Updated::Repository is available at https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"

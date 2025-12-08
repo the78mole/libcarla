@@ -47,7 +47,7 @@ else()
 endif()
 
 # Simple client example
-add_executable(simple_client simple_client.cpp)
+add_executable(simple_client main.cpp)
 
 if(libcarla_FOUND)
     target_link_libraries(simple_client

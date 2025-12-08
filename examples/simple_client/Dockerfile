@@ -1,7 +1,8 @@
-# Multi-stage Dockerfile for building CARLA client example on Ubuntu 24.04
+# Multi-stage Dockerfile for building CARLA client example
 # Uses the libcarla .deb package from GitHub releases
 
-FROM ubuntu:24.04 as builder
+ARG UBUNTU_VERSION=22.04
+FROM ubuntu:${UBUNTU_VERSION} as builder
 
 # Install build dependencies
 RUN apt-get update && \
@@ -17,9 +18,10 @@ RUN apt-get update && \
 WORKDIR /build
 
 # Download and install libcarla .deb package from GitHub releases
+# Default to latest release, can be overridden with build arg
 ARG LIBCARLA_VERSION=latest
 ARG TARGETARCH=amd64
-ARG UBUNTU_VERSION=24.04
+ARG UBUNTU_VERSION=22.04
 
 # Download the .deb package from GitHub releases
 # Note: Package naming format is libcarla_VERSION-ubuntu-XX.XX_ARCH.deb
@@ -37,7 +39,7 @@ RUN if [ "${LIBCARLA_VERSION}" = "latest" ]; then \
     rm libcarla.deb
 
 # Copy example source code
-COPY simple_client.cpp .
+COPY main.cpp .
 COPY CMakeLists.txt .
 
 # Build the example
@@ -46,13 +48,13 @@ RUN mkdir build && cd build && \
     make -j$(nproc)
 
 # Runtime stage - minimal image with just the executable
-FROM ubuntu:24.04 as runtime
+FROM ubuntu:${UBUNTU_VERSION} as runtime
 
 # Install runtime dependencies only
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libboost-filesystem1.83.0 \
-    libboost-system1.83.0 \
+    libboost-filesystem1.74.0 \
+    libboost-system1.74.0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the built executable
