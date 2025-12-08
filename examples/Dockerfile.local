@@ -1,0 +1,51 @@
+# Local test Dockerfile - uses locally built .deb package
+# For testing before GitHub release
+
+ARG UBUNTU_VERSION=22.04
+FROM ubuntu:${UBUNTU_VERSION} as builder
+
+# Install build dependencies
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    cmake \
+    build-essential \
+    libboost-filesystem-dev \
+    libboost-system-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /build
+
+# Copy local .deb package
+COPY *.deb /tmp/
+
+# Install the local .deb package
+RUN dpkg -i /tmp/*.deb || apt-get install -f -y
+
+# Copy example source code
+COPY simple_client.cpp .
+COPY CMakeLists.txt .
+
+# Build the example
+RUN mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) VERBOSE=1
+
+# Runtime stage - minimal image with just the executable
+FROM ubuntu:${UBUNTU_VERSION} as runtime
+
+# Install runtime dependencies only
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    libboost-filesystem1.74.0 \
+    libboost-system1.74.0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the built executable
+COPY --from=builder /build/build/simple_client /usr/local/bin/simple_client
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/local/bin/simple_client"]
+
+# Default to localhost:2000, but can be overridden
+CMD ["localhost", "2000"]
