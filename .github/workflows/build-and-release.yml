@@ -547,12 +547,8 @@ jobs:
   publish-apt:
     name: Publish APT Repository
     needs: [version, release]
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/publish-apt-repo.yml
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Trigger APT Repository Workflow
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: publish-apt-repo.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{"tag_name": "v${{ needs.version.outputs.version }}"}'
+    secrets: inherit
+    with:
+      tag_name: v${{ needs.version.outputs.version }}
