@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LibCarla APT Repository</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
-    <script>hljs.highlightAll();</script>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -67,22 +70,24 @@
         }
         
         .code-block {
-            background: #282c34;
-            padding: 0;
             border-radius: 8px;
-            overflow-x: auto;
+            overflow: hidden;
             margin: 1rem 0;
         }
         
         .code-block pre {
-            margin: 0;
-            padding: 1.5rem;
+            margin: 0 !important;
+            border-radius: 8px !important;
         }
         
         .code-block code {
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
             line-height: 1.5;
+        }
+        
+        div[class*="code-toolbar"] {
+            margin: 1rem 0;
         }
         
         .step {
@@ -157,18 +162,18 @@
                 
                 <div class="step">
                     <h3><span class="step-number">1</span>Add the repository GPG key</h3>
-                    <div class="code-block"><pre><code class="language-bash">curl -fsSL https://${REPO_OWNER}.github.io/${REPO_NAME}/public.key | sudo gpg --dearmor -o /usr/share/keyrings/libcarla-archive-keyring.gpg</code></pre></div>
+                    <pre><code class="language-bash">curl -fsSL https://${REPO_OWNER}.github.io/${REPO_NAME}/public.key | sudo gpg --dearmor -o /usr/share/keyrings/libcarla-archive-keyring.gpg</code></pre>
                 </div>
                 
                 <div class="step">
                     <h3><span class="step-number">2</span>Add the repository</h3>
-                    <div class="code-block"><pre><code class="language-bash">echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/libcarla-archive-keyring.gpg] https://${REPO_OWNER}.github.io/${REPO_NAME} stable main" | sudo tee /etc/apt/sources.list.d/libcarla.list</code></pre></div>
+                    <pre><code class="language-bash">echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/libcarla-archive-keyring.gpg] https://${REPO_OWNER}.github.io/${REPO_NAME} stable main" | sudo tee /etc/apt/sources.list.d/libcarla.list</code></pre>
                 </div>
                 
                 <div class="step">
                     <h3><span class="step-number">3</span>Update and install</h3>
-                    <div class="code-block"><pre><code class="language-bash">sudo apt-get update
-sudo apt-get install libcarla</code></pre></div>
+                    <pre><code class="language-bash">sudo apt-get update</code></pre>
+                    <pre><code class="language-bash">sudo apt-get install libcarla</code></pre>
                 </div>
             </div>
             
@@ -209,14 +214,14 @@ sudo apt-get install libcarla</code></pre></div>
             <div class="section">
                 <h2>🔍 Testing the Repository</h2>
                 <p>To verify the repository is working correctly:</p>
-                <div class="code-block"><pre><code class="language-bash"># Check if the repository is accessible
-curl -I https://${REPO_OWNER}.github.io/${REPO_NAME}/dists/stable/Release
-
-# List available packages
-apt-cache policy libcarla
-
-# View package information
-apt show libcarla</code></pre></div>
+                <p><strong>Check if the repository is accessible:</strong></p>
+                <pre><code class="language-bash">curl -I https://${REPO_OWNER}.github.io/${REPO_NAME}/dists/stable/Release</code></pre>
+                
+                <p><strong>List available packages:</strong></p>
+                <pre><code class="language-bash">apt-cache policy libcarla</code></pre>
+                
+                <p><strong>View package information:</strong></p>
+                <pre><code class="language-bash">apt show libcarla</code></pre>
             </div>
         </main>
         
