@@ -4,7 +4,7 @@
 set -e
 
 # Default values
-UBUNTU_VERSION="22.04"
+UBUNTU_VERSION="24.04"
 LIBCARLA_VERSION="latest"
 IMAGE_NAME="carla-simple-client"
 IMAGE_TAG="latest"

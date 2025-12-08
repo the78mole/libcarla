@@ -102,9 +102,61 @@ Example completed successfully!
 
 ## Troubleshooting
 
+### Connecting from WSL to Windows CARLA Server
+
+If you're running the CARLA server on Windows and trying to connect from WSL (e.g., using the Docker client), you need to configure networking properly:
+
+#### 1. Find the Windows Host IP Address
+
+From WSL, you cannot use `localhost` or `127.0.0.1` to reach Windows. Instead, use the Windows network adapter IP:
+
+```bash
+# On Windows, open PowerShell or Command Prompt:
+ipconfig /all
+
+# Look for the "Ethernet adapter vEthernet (WSL)" section
+# or your main network adapter and note the IPv4 address (e.g., 10.0.4.100)
+```
+
+Then use this IP when running the client:
+```bash
+docker run --rm carla-simple-client:latest 10.0.4.100 2000
+```
+
+#### 2. Configure Windows Firewall (Critical!)
+
+**This is the most common reason for connection failures.** Windows Firewall blocks incoming connections from the WSL network on port 2000 by default.
+
+To allow connections:
+
+1. Press the **Windows key** and type **"Windows Defender Firewall with Advanced Security"**
+2. Click on **Inbound Rules** in the left panel
+3. Click **New Rule...** in the right panel
+4. Select **Port** → Click **Next**
+5. Select **TCP** and enter **Specific local ports**: `2000-2002`
+   - CARLA uses port 2000 for RPC communication
+   - Ports 2001-2002 are used for streaming sensor data
+6. Click **Next** → Select **Allow the connection** → Click **Next**
+7. Keep all checkboxes selected (Domain, Private, Public) → Click **Next**
+8. Give the rule a name, e.g., **"CARLA Simulator WSL Access"**
+9. Click **Finish**
+
+#### 3. Verify the Connection
+
+Test if the port is accessible from WSL:
+
+```bash
+# Install netcat if needed
+sudo apt-get install netcat
+
+# Test connection (should not immediately fail if port is open)
+nc -zv 10.0.4.100 2000
+```
+
 ### Connection refused
 - Make sure the CARLA server is running on the specified host and port
 - Check firewall settings if connecting to a remote server
+- For WSL-to-Windows connections, see the section above
 
 ### Blueprint not found
 - The example uses `vehicle.tesla.model3`. If this blueprint is not available in your CARLA version, modify the code to use a different vehicle blueprint

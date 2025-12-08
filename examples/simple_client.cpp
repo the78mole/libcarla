@@ -21,6 +21,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <cmath>
+#include <limits>
 
 namespace cc = carla::client;
 namespace cg = carla::geom;
@@ -72,8 +74,30 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        cg::Transform spawn_point = spawn_points[0];
-        std::cout << "Spawn point: (" 
+        std::cout << "Total spawn points available: " << spawn_points.size() << std::endl;
+        
+        // Target location near the curve
+        cg::Location target(-83.5462f, 131.02f, 0.0f);
+        
+        // Find closest spawn point to target
+        size_t spawn_index = 0;
+        float min_distance = std::numeric_limits<float>::max();
+        
+        for (size_t i = 0; i < spawn_points.size(); ++i) {
+            auto& sp = spawn_points[i];
+            float dx = sp.location.x - target.x;
+            float dy = sp.location.y - target.y;
+            float distance = std::sqrt(dx * dx + dy * dy);
+            
+            if (distance < min_distance) {
+                min_distance = distance;
+                spawn_index = i;
+            }
+        }
+        
+        cg::Transform spawn_point = spawn_points[spawn_index];
+        std::cout << "\nTarget location: (" << target.x << ", " << target.y << ", " << target.z << ")" << std::endl;
+        std::cout << "Closest spawn point [" << spawn_index << "] at distance " << min_distance << "m: (" 
                   << spawn_point.location.x << ", "
                   << spawn_point.location.y << ", "
                   << spawn_point.location.z << ")" << std::endl;
@@ -84,22 +108,50 @@ int main(int argc, char* argv[]) {
         auto vehicle = boost::static_pointer_cast<cc::Vehicle>(actor);
         std::cout << "Vehicle spawned with ID: " << vehicle->GetId() << std::endl;
 
-        // Drive the vehicle forward for 5 seconds
-        std::cout << "Driving vehicle forward..." << std::endl;
+        // Enable autopilot for easier visibility
+        std::cout << "\nEnabling autopilot for 60 seconds..." << std::endl;
+        vehicle->SetAutopilot(true);
+        
+        // Monitor vehicle position for 60 seconds
+        for (int i = 0; i < 45; ++i) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            auto location = vehicle->GetLocation();
+            auto velocity = vehicle->GetVelocity();
+            float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+            std::cout << "  [" << (i+1) << "s] Position: (" 
+                      << location.x << ", " << location.y << ", " << location.z 
+                      << ") Speed: " << speed << " m/s" << std::endl;
+        }
+        
+        std::cout << "\nDisabling autopilot..." << std::endl;
+        vehicle->SetAutopilot(false);
+        
+        // Drive manually with strong throttle
+        std::cout << "Manual driving for 5 seconds..." << std::endl;
         crpc::VehicleControl control;
-        control.throttle = 0.5f;
-        control.steer = 0.0f;
-        control.brake = 0.0f;
         control.hand_brake = false;
         control.reverse = false;
         control.manual_gear_shift = false;
-
+        control.throttle = 0.8f;
+        control.steer = 0.0f;
+        control.brake = 0.0f;
+        
         vehicle->ApplyControl(control);
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        
+        for (int i = 0; i < 5; ++i) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            auto location = vehicle->GetLocation();
+            auto velocity = vehicle->GetVelocity();
+            float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+            std::cout << "  [" << (i+1) << "s] Position: (" 
+                      << location.x << ", " << location.y << ", " << location.z 
+                      << ") Speed: " << speed << " m/s" << std::endl;
+        }
 
         // Stop the vehicle
         std::cout << "Stopping vehicle..." << std::endl;
         control.throttle = 0.0f;
+        control.steer = 0.0f;
         control.brake = 1.0f;
         vehicle->ApplyControl(control);
         std::this_thread::sleep_for(std::chrono::seconds(1));
