@@ -1,0 +1,192 @@
+name: Build Examples
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Release tag to download libcarla from (e.g., v0.0.18)'
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      libcarla_version:
+        description: 'LibCarla version to use (e.g., v0.0.18)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-examples:
+    name: Build Example - ${{ matrix.example }} (${{ matrix.ubuntu }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        example:
+          - simple_client
+        ubuntu: ['22.04', '24.04']
+        arch: ['amd64', 'arm64']
+        include:
+          # amd64 builds run on ubuntu-latest
+          - arch: amd64
+            runner: ubuntu-latest
+            target_arch: x86_64
+          # arm64 builds also run on ubuntu-latest with cross-compilation
+          - arch: arm64
+            runner: ubuntu-latest
+            target_arch: aarch64
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            wget \
+            libboost-filesystem-dev \
+            libboost-system-dev
+
+      - name: Set up cross-compilation for ARM64
+        if: matrix.arch == 'arm64'
+        run: |
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu
+          
+          # Add ARM64 architecture
+          sudo dpkg --add-architecture arm64
+          sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main universe" | sudo tee /etc/apt/sources.list.d/arm64.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main universe" | sudo tee -a /etc/apt/sources.list.d/arm64.list
+          sudo apt-get update
+          sudo apt-get install -y \
+            libboost-filesystem-dev:arm64 \
+            libboost-system-dev:arm64
+
+      - name: Download LibCarla package
+        run: |
+          # Use release_tag (from workflow_call) or libcarla_version (from workflow_dispatch)
+          TAG="${{ inputs.release_tag || inputs.libcarla_version }}"
+          # Remove 'v' prefix if present to get version
+          VERSION="${TAG#v}"
+          
+          UBUNTU_VERSION="${{ matrix.ubuntu }}"
+          ARCH="${{ matrix.arch }}"
+          
+          # Download the .deb package using the tag
+          wget -O libcarla.deb \
+            "https://github.com/${{ github.repository }}/releases/download/${TAG}/libcarla_${VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+          
+          echo "Downloaded: libcarla_${VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+
+      - name: Install LibCarla
+        run: |
+          sudo dpkg -i libcarla.deb || true
+          sudo apt-get install -f -y
+
+      - name: Build Example
+        working-directory: examples/${{ matrix.example }}
+        run: |
+          mkdir -p build
+          cd build
+          
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            # Cross-compilation for ARM64
+            cmake .. \
+              -DCMAKE_SYSTEM_NAME=Linux \
+              -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+              -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+              -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+              -DCMAKE_FIND_ROOT_PATH=/usr/aarch64-linux-gnu \
+              -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+              -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+              -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
+          else
+            # Native build for amd64
+            cmake ..
+          fi
+          
+          make -j$(nproc)
+          
+          echo "Built binary:"
+          ls -lh ${{ matrix.example }}
+
+      - name: Create Debian Package
+        run: |
+          # Use release_tag (from workflow_call) or libcarla_version (from workflow_dispatch)
+          TAG="${{ inputs.release_tag || inputs.libcarla_version }}"
+          VERSION="${TAG#v}"
+          UBUNTU_VERSION="${{ matrix.ubuntu }}"
+          ARCH="${{ matrix.arch }}"
+          EXAMPLE="${{ matrix.example }}"
+          
+          PACKAGE_NAME="libcarla-example-${EXAMPLE}"
+          PACKAGE_VERSION="${VERSION}"
+          PACKAGE_DIR="${PACKAGE_NAME}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}"
+          
+          # Create package structure
+          mkdir -p "${PACKAGE_DIR}/DEBIAN"
+          mkdir -p "${PACKAGE_DIR}/usr/bin"
+          mkdir -p "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}"
+          
+          # Copy binary
+          cp "examples/${EXAMPLE}/build/${EXAMPLE}" "${PACKAGE_DIR}/usr/bin/${EXAMPLE}"
+          chmod 755 "${PACKAGE_DIR}/usr/bin/${EXAMPLE}"
+          
+          # Copy README if exists
+          if [ -f "examples/${EXAMPLE}/README.md" ]; then
+            cp "examples/${EXAMPLE}/README.md" "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/"
+          fi
+          
+          # Create control file
+          cat > "${PACKAGE_DIR}/DEBIAN/control" <<EOF
+          Package: ${PACKAGE_NAME}
+          Version: ${PACKAGE_VERSION}
+          Section: devel
+          Priority: optional
+          Architecture: ${ARCH}
+          Depends: libcarla (>= ${PACKAGE_VERSION}), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
+          Maintainer: the78mole <the78mole@users.noreply.github.com>
+          Description: LibCarla Example - ${EXAMPLE}
+           Example application demonstrating the use of LibCarla client library.
+           This example shows how to connect to a CARLA server and interact with it.
+          Homepage: https://github.com/${{ github.repository }}
+          EOF
+          
+          # Build the package
+          dpkg-deb --build "${PACKAGE_DIR}"
+          
+          # Rename to standard format
+          mv "${PACKAGE_DIR}.deb" "libcarla-example-${EXAMPLE}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+          
+          echo "Created package:"
+          ls -lh "libcarla-example-${EXAMPLE}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+
+      - name: Upload Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcarla-example-${{ matrix.example }}-ubuntu${{ matrix.ubuntu }}-${{ matrix.arch }}
+          path: libcarla-example-*.deb
+          if-no-files-found: error
+          retention-days: 30
+
+  summary:
+    name: Build Summary
+    needs: build-examples
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build results
+        run: |
+          if [ "${{ needs.build-examples.result }}" != "success" ]; then
+            echo "::error::Some example builds failed"
+            exit 1
+          fi
+          echo "::notice::All example builds completed successfully"
