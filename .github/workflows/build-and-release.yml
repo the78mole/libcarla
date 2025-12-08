@@ -522,6 +522,7 @@ jobs:
           find artifacts -type f -name "*.tar.gz" -o -name "*.deb" | head -100
 
       - name: Create Release
+        id: create_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.version.outputs.version }}
@@ -542,3 +543,16 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-apt:
+    name: Publish APT Repository
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger APT Repository Workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: publish-apt-repo.yml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{"tag_name": "v${{ needs.version.outputs.version }}"}'

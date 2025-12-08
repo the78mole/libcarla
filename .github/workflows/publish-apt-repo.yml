@@ -2,7 +2,13 @@ name: Publish APT Repository
 
 on:
   release:
-    types: [published]
+    types: [published, created]
+  workflow_call:
+    inputs:
+      tag_name:
+        description: 'Release tag name'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -18,7 +24,7 @@ jobs:
       - name: Download Release Assets
         uses: dsaltares/fetch-gh-release-asset@master
         with:
-          version: 'tags/${{ github.event.release.tag_name }}'
+          version: 'tags/${{ inputs.tag_name || github.event.release.tag_name }}'
           file: '.*\.deb'
           regex: true
           target: 'packages/'
@@ -29,7 +35,7 @@ jobs:
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE || '' }}
           git_user_signingkey: true
           git_commit_gpgsign: true
 
