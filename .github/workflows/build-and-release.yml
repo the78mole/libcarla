@@ -530,12 +530,61 @@ jobs:
           body: |
             ## LibCarla v${{ needs.version.outputs.version }}
             
-            ### Changes
-            - Auto-generated release from commit ${{ github.sha }}
+            ### 📦 Installation
             
-            ### Artifacts
-            - LibCarla binaries for Ubuntu 22.04 and 24.04 (x86_64 and arm64)
-            - Debian packages (.deb) for easy installation
+            #### Via APT Repository (Recommended)
+            ```bash
+            # Add repository
+            curl -fsSL https://the78mole.github.io/libcarla/public.key | sudo gpg --dearmor -o /usr/share/keyrings/libcarla-archive-keyring.gpg
+            echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/libcarla-archive-keyring.gpg] https://the78mole.github.io/libcarla stable main" | sudo tee /etc/apt/sources.list.d/libcarla.list
+            
+            # Install
+            sudo apt-get update
+            sudo apt-get install libcarla
+            
+            # Install examples (optional)
+            sudo apt-get install libcarla-example-simple-client
+            ```
+            
+            📚 [Full APT Repository Documentation](https://the78mole.github.io/libcarla)
+            
+            #### Manual Installation
+            Download the appropriate `.deb` package for your system from the assets below.
+            
+            ### 📋 What's Included
+            
+            **LibCarla Library:**
+            - ✅ Static libraries for Ubuntu 22.04 and 24.04
+            - ✅ Support for x86_64 (amd64) and ARM64 (aarch64)
+            - ✅ All headers and CMake integration files
+            - ✅ Debian packages for easy installation
+            
+            **Example Applications:**
+            - 🚗 `simple_client` - Basic CARLA client demonstration
+            - Available as separate Debian packages
+            - Examples will be added to the release shortly after the main library
+            
+            ### 🔧 Changes
+            - Auto-generated release from commit `${{ github.sha }}`
+            
+            ### 📦 Available Packages
+            
+            **LibCarla Core:**
+            - `libcarla_*-ubuntu-22.04_amd64.deb` - Ubuntu 22.04 x86_64
+            - `libcarla_*-ubuntu-24.04_amd64.deb` - Ubuntu 24.04 x86_64
+            - `libcarla_*-ubuntu-22.04_arm64.deb` - Ubuntu 22.04 ARM64
+            - `libcarla_*-ubuntu-24.04_arm64.deb` - Ubuntu 24.04 ARM64
+            
+            **Examples (added after initial release):**
+            - `libcarla-example-simple-client_*-ubuntu-22.04_amd64.deb`
+            - `libcarla-example-simple-client_*-ubuntu-24.04_amd64.deb`
+            - `libcarla-example-simple-client_*-ubuntu-22.04_arm64.deb`
+            - `libcarla-example-simple-client_*-ubuntu-24.04_arm64.deb`
+            
+            ### 🔗 Resources
+            - 📖 [Repository](https://github.com/${{ github.repository }})
+            - 🌐 [APT Repository](https://the78mole.github.io/libcarla)
+            - 📚 [Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
           files: |
             artifacts/**/*.tar.gz
             artifacts/**/*.deb
@@ -552,3 +601,12 @@ jobs:
     secrets: inherit
     with:
       tag_name: v${{ needs.version.outputs.version }}
+
+  build-examples:
+    name: Build Examples
+    needs: [version, release]
+    uses: ./.github/workflows/build-examples.yml
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    secrets: inherit
+    with:
+      release_tag: v${{ needs.version.outputs.version }}

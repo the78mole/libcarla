@@ -15,7 +15,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-examples:
@@ -177,9 +177,94 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  upload-to-release:
+    name: Upload Examples to Release
+    needs: build-examples
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_call'
+    steps:
+      - name: Download All Example Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: example-packages
+          pattern: libcarla-example-*
+
+      - name: Display Downloaded Packages
+        run: |
+          echo "Downloaded example packages:"
+          find example-packages -type f -name "*.deb"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: example-packages/**/*.deb
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-apt-repo:
+    name: Add Examples to APT Repository
+    needs: [build-examples, upload-to-release]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_call'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download All Example Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: example-packages
+          pattern: libcarla-example-*
+
+      - name: Setup GPG
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE || '' }}
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: public_repo
+          fetch-depth: 0
+
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      - name: Add Examples to APT Repository
+        working-directory: public_repo
+        run: |
+          # Add new .deb packages
+          for deb in ../example-packages/**/*.deb; do
+            if [ -f "$deb" ]; then
+              echo "Adding $deb to APT repository..."
+              reprepro -b . includedeb stable "$deb" || echo "Failed to add $deb, continuing..."
+            fi
+          done
+
+      - name: Configure git
+        working-directory: public_repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public_repo
+          publish_branch: gh-pages
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Add example packages to APT repository - ${{ inputs.release_tag }}'
+
   summary:
     name: Build Summary
-    needs: build-examples
+    needs: [build-examples, upload-to-release, update-apt-repo]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -190,3 +275,11 @@ jobs:
             exit 1
           fi
           echo "::notice::All example builds completed successfully"
+          
+          if [ "${{ needs.upload-to-release.result }}" == "success" ]; then
+            echo "::notice::Examples uploaded to release"
+          fi
+          
+          if [ "${{ needs.update-apt-repo.result }}" == "success" ]; then
+            echo "::notice::Examples added to APT repository"
+          fi
