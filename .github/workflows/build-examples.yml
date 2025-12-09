@@ -115,8 +115,39 @@ jobs:
 
       - name: Install LibCarla
         run: |
+          ARCH="${{ matrix.arch }}"
+          
           sudo dpkg -i libcarla.deb || true
           sudo apt-get install -f -y
+          
+          # For ARM64 cross-compilation, create symlinks in the cross-compile sysroot
+          if [ "$ARCH" = "arm64" ]; then
+            echo "Setting up ARM64 cross-compilation environment..."
+            
+            # Create directories if they don't exist
+            sudo mkdir -p /usr/aarch64-linux-gnu/lib
+            sudo mkdir -p /usr/aarch64-linux-gnu/include
+            
+            # Link libcarla libraries to cross-compile location
+            if [ -d /usr/lib ]; then
+              for lib in carla_client rpc Recast Detour DetourCrowd; do
+                if [ -f "/usr/lib/lib${lib}.a" ]; then
+                  sudo ln -sf "/usr/lib/lib${lib}.a" "/usr/aarch64-linux-gnu/lib/lib${lib}.a"
+                  echo "Linked lib${lib}.a"
+                fi
+              done
+            fi
+            
+            # Link include files
+            if [ -d /usr/include/carla ]; then
+              sudo ln -sf /usr/include/carla /usr/aarch64-linux-gnu/include/carla
+              echo "Linked carla includes"
+            fi
+            if [ -d /usr/include/recast ]; then
+              sudo ln -sf /usr/include/recast /usr/aarch64-linux-gnu/include/recast
+              echo "Linked recast includes"
+            fi
+          fi
 
       - name: Install Example Dependencies
         run: |
