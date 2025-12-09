@@ -161,11 +161,15 @@ jobs:
           tar -xzf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
           mv libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/* debian-pkg/usr/
           
+          # Extract Ubuntu version for package versioning
+          UBUNTU_VERSION="${{ matrix.os }}"
+          UBUNTU_VERSION="${UBUNTU_VERSION#ubuntu-}"
+          
           # Create DEBIAN directory and control file
           mkdir -p debian-pkg/DEBIAN
           cat > debian-pkg/DEBIAN/control << EOF
           Package: libcarla
-          Version: ${{ needs.version.outputs.version }}
+          Version: ${{ needs.version.outputs.version }}+ubuntu${UBUNTU_VERSION}
           Section: libs
           Priority: optional
           Architecture: ${DEB_ARCH}
@@ -205,13 +209,13 @@ jobs:
           
           # Build the package
           dpkg-deb --build debian-pkg
-          mv debian-pkg.deb libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_${DEB_ARCH}.deb
+          mv debian-pkg.deb libcarla_${{ needs.version.outputs.version }}+ubuntu${UBUNTU_VERSION}_${DEB_ARCH}.deb
 
       - name: Upload Debian Package
         uses: actions/upload-artifact@v4
         with:
           name: libcarla-deb-${{ matrix.artifact_suffix }}
-          path: build/libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_*.deb
+          path: build/libcarla_${{ needs.version.outputs.version }}+ubuntu*_*.deb
 
   build-libcarla-cross:
     name: Build LibCarla (Cross-compile ARM64)
@@ -369,11 +373,15 @@ jobs:
           tar -xzf libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}.tar.gz
           mv libcarla-${{ needs.version.outputs.version }}-${{ matrix.artifact_suffix }}/* debian-pkg/usr/
           
+          # Extract Ubuntu version for package versioning
+          UBUNTU_VERSION="${{ matrix.os }}"
+          UBUNTU_VERSION="${UBUNTU_VERSION#ubuntu-}"
+          
           # Create DEBIAN directory and control file
           mkdir -p debian-pkg/DEBIAN
           cat > debian-pkg/DEBIAN/control << EOF
           Package: libcarla
-          Version: ${{ needs.version.outputs.version }}
+          Version: ${{ needs.version.outputs.version }}+ubuntu${UBUNTU_VERSION}
           Section: libs
           Priority: optional
           Architecture: arm64
@@ -413,13 +421,13 @@ jobs:
           
           # Build the package
           dpkg-deb --build debian-pkg
-          mv debian-pkg.deb libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_arm64.deb
+          mv debian-pkg.deb libcarla_${{ needs.version.outputs.version }}+ubuntu${UBUNTU_VERSION}_arm64.deb
 
       - name: Upload Debian Package
         uses: actions/upload-artifact@v4
         with:
           name: libcarla-deb-${{ matrix.artifact_suffix }}
-          path: build-arm64/libcarla_${{ needs.version.outputs.version }}-${{ matrix.os }}_arm64.deb
+          path: build-arm64/libcarla_${{ needs.version.outputs.version }}+ubuntu*_arm64.deb
 
   pr-release-notes:
     name: Post Release Notes to PR
