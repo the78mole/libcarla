@@ -218,7 +218,7 @@
                 <pre><code class="language-bash">curl -I https://${REPO_OWNER}.github.io/${REPO_NAME}/dists/stable/Release</code></pre>
                 
                 <p><strong>List available packages:</strong></p>
-                <pre><code class="language-bash">curl https://the78mole.github.io/libcarla/dists/stable/main/binary-arm64/Packages</pre>
+                <pre><code class="language-bash">curl https://the78mole.github.io/libcarla/dists/stable/main/binary-arm64/Packages</code></pre>
                 
                 <p>...or with apt repo configured in your system:</p>
                 <pre><code class="language-bash">apt-cache policy libcarla</code></pre>
@@ -227,11 +227,12 @@
                 <pre><code class="language-bash">apt show libcarla</code></pre>
             </div>
         </main>
-        
+
         <footer>
-            <p>📚 <a href="https://github.com/${REPO_OWNER}/${REPO_NAME}" target="_blank">View on GitHub</a> | 
-            📖 <a href="README.md">Documentation</a> | 
-            🔑 <a href="public.key">GPG Public Key</a></p>
+            <p>📚 <a href="https://github.com/${REPO_OWNER}/${REPO_NAME}" target="_blank">View on GitHub</a> |
+            📖 <a href="README.md">Documentation</a> |
+            🔑 <a href="public.key">GPG Public Key</a> |
+            🏊 <a href="pool/">Pool</a></p>
             <p style="margin-top: 1rem; font-size: 0.9rem;">Maintained by <a href="https://github.com/${REPO_OWNER}" target="_blank">${REPO_OWNER}</a></p>
         </footer>
     </div>

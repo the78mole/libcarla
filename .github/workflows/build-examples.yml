@@ -69,9 +69,32 @@ jobs:
           
           # Add ARM64 architecture
           sudo dpkg --add-architecture arm64
-          sudo sed -i 's/deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME} main universe" | sudo tee /etc/apt/sources.list.d/arm64.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME}-updates main universe" | sudo tee -a /etc/apt/sources.list.d/arm64.list
+          
+          # Backup original sources.list
+          sudo mv /etc/apt/sources.list /etc/apt/sources.list.backup
+          
+          # Ubuntu 24.04+ uses DEB822 format, disable it to avoid conflicts
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.disabled
+          fi
+          
+          # Get the actual codename of the runner (not target Ubuntu version)
+          RUNNER_CODENAME=$(lsb_release -cs)
+          
+          # Create new sources.list with proper architecture tags
+          cat <<EOF | sudo tee /etc/apt/sources.list
+          # AMD64 repositories
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $RUNNER_CODENAME main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $RUNNER_CODENAME-updates main restricted universe multiverse
+          deb [arch=amd64] http://archive.ubuntu.com/ubuntu $RUNNER_CODENAME-backports main restricted universe multiverse
+          deb [arch=amd64] http://security.ubuntu.com/ubuntu $RUNNER_CODENAME-security main restricted universe multiverse
+          
+          # ARM64 repositories from ports
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $RUNNER_CODENAME main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $RUNNER_CODENAME-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $RUNNER_CODENAME-security main restricted universe multiverse
+          EOF
+          
           sudo apt-get update
 
       - name: Download LibCarla package
