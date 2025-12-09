@@ -23,34 +23,34 @@ Description: CARLA Simulator C++ Library
 Homepage: https://github.com/the78mole/libcarla
 
 Package: libcarla-example-eabs-demo
-Version: 0.0.40+ubuntu24.04
+Version: 0.0.42+ubuntu24.04
 Architecture: arm64
-Depends: libcarla (>= 0.0.40+ubuntu24.04), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
+Depends: libcarla (>= 0.0.42+ubuntu24.04), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
 Maintainer: the78mole <the78mole@users.noreply.github.com>
 Priority: optional
 Section: devel
-Filename: pool/main/libc/libcarla-example-eabs-demo/libcarla-example-eabs-demo_0.0.40+ubuntu24.04_arm64.deb
-Size: 1116570
-SHA256: cefb876951a67296d5e021b5e0461e7755da9b5f1850b30fdfbd9b0acf82a61f
-SHA1: e21585008560ada53758af98c5ad257c39cb0e1c
-MD5sum: 1ed1103cdb1d4b931396fcc4ba2ff225
+Filename: pool/main/libc/libcarla-example-eabs-demo/libcarla-example-eabs-demo_0.0.42+ubuntu24.04_arm64.deb
+Size: 1116456
+SHA256: 2891224ce4e620e88dd0020d8985cfdfc4ae11477fd89f3cbce44fd09dda7bcc
+SHA1: 39c3f2e9d90fc0630a381b22c3a4705b32d8481c
+MD5sum: cc89dd465c2e8d5b2cf23c30bb22d2b1
 Description: LibCarla Example - eabs_demo
  Example application demonstrating the use of LibCarla client library.
  This example shows how to connect to a CARLA server and interact with it.
 Homepage: https://github.com/the78mole/libcarla
 
 Package: libcarla-example-simple-client
-Version: 0.0.40+ubuntu24.04
+Version: 0.0.42+ubuntu24.04
 Architecture: arm64
-Depends: libcarla (>= 0.0.40+ubuntu24.04), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
+Depends: libcarla (>= 0.0.42+ubuntu24.04), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
 Maintainer: the78mole <the78mole@users.noreply.github.com>
 Priority: optional
 Section: devel
-Filename: pool/main/libc/libcarla-example-simple-client/libcarla-example-simple-client_0.0.40+ubuntu24.04_arm64.deb
-Size: 1079716
-SHA256: 53921e60148db195a96ad153394a07ea5f81f837c186c892de2706e90c8326b2
-SHA1: c87678dadbbbb8179748c74aff690514fbd04e79
-MD5sum: 792304bad7b25b2f048f05ea5c7a4646
+Filename: pool/main/libc/libcarla-example-simple-client/libcarla-example-simple-client_0.0.42+ubuntu24.04_arm64.deb
+Size: 1079644
+SHA256: 69a4eed63251b8c5b15d148e899288d97d36f4b578d366f5ae4c27d0a50530d4
+SHA1: 5bca3d533d5878bdd154a1475f949aae38df3925
+MD5sum: be61fe9cc6199528eea4b4a2c5f1393c
 Description: LibCarla Example - simple_client
  Example application demonstrating the use of LibCarla client library.
  This example shows how to connect to a CARLA server and interact with it.
