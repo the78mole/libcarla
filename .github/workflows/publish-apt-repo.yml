@@ -103,6 +103,10 @@ jobs:
           envsubst < ../.github/apt-repo/README.md.template > README.md
           envsubst < ../.github/apt-repo/index.html.template > index.html
 
+          # Generate directory listings for browsing
+          echo "Generating directory listings..."
+          bash ../.github/apt-repo/generate-listings.sh
+
       # 8. Configure git
       - name: Configure git
         working-directory: public_repo
