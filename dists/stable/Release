@@ -1,28 +1,28 @@
 Origin: the78mole/libcarla
 Label: LibCarla Repository
 Codename: stable
-Date: Tue, 09 Dec 2025 11:31:57 UTC
+Date: Tue, 09 Dec 2025 11:45:25 UTC
 Architectures: amd64 arm64
 Components: main
 Description: Official LibCarla APT Repository
 MD5Sum:
- e5af295f249198575316660a0a6d7737 1005 main/binary-amd64/Packages
- 0659c42e081fc9b83c4261bffea69743 607 main/binary-amd64/Packages.gz
+ 02b3285fa033349e841c712da2d6b840 1005 main/binary-amd64/Packages
+ 04dabb8a0841dfcb649bf275e635d21b 603 main/binary-amd64/Packages.gz
  242af0fd4c0b3ee23e5999de8617450b 136 main/binary-amd64/Release
- 48dd95c4935a4df2b438ef5f0e08fba4 1005 main/binary-arm64/Packages
- 796f0e03448530c12df18e56577d88f7 606 main/binary-arm64/Packages.gz
+ dffc59ac529051271d022a588fc062d2 1005 main/binary-arm64/Packages
+ e0dac605a7af9674a4f740c7220f5e1e 607 main/binary-arm64/Packages.gz
  0e313f25532a4dc6308617d8add53346 136 main/binary-arm64/Release
 SHA1:
- 5b2a18d560454728a97235b708e750f38422b1c5 1005 main/binary-amd64/Packages
- a91ae56ea9aa4af7eae6e17026eba2d8f12ca11f 607 main/binary-amd64/Packages.gz
+ 264358b1b673a4105d89ae30b8d86b381adc486c 1005 main/binary-amd64/Packages
+ e4fd0eef4184e0992dcd8fb3bed13a61dc9e428e 603 main/binary-amd64/Packages.gz
  f69786a0bb79a56a647ea889a8a37e2eec10b723 136 main/binary-amd64/Release
- 7ce2f9bef40b216ae0fd97032848372a4f0d5e78 1005 main/binary-arm64/Packages
- e5ab601feb47914d2bf9cda2164c522fdb1212f1 606 main/binary-arm64/Packages.gz
+ 522e570290079dcb1407241e583faf784c66feee 1005 main/binary-arm64/Packages
+ 8ec1590b29c6acc66cf89e830315f2e8a41d585a 607 main/binary-arm64/Packages.gz
  242127ce0674393d796e8d97e65b84aeebb66902 136 main/binary-arm64/Release
 SHA256:
- a849c736ca75522ffca40ec82b85002df0625bc6e5a063ba11342dad8d8abace 1005 main/binary-amd64/Packages
- 6f8c3fda81c49594ae773df9221c0de0db1d0ff0d3391d9599101ed95de83626 607 main/binary-amd64/Packages.gz
+ 57e98b2967142cdfbbd74fe9021fc419877ae22d8433d5de69cfcb9c894df534 1005 main/binary-amd64/Packages
+ 44d3dc952cac61c281ec9ecc36fff0809ea74b9199dfab7b0fade6378a54c856 603 main/binary-amd64/Packages.gz
  422875accf1df86f4e6218c7e6a9c488eb6dba5444a5d28f4cbd4b02426cf464 136 main/binary-amd64/Release
- 4f429c534b259f537326e7c4ff4489165677d6967efc134dfcadb34704e0e4e4 1005 main/binary-arm64/Packages
- 15c58e54e63945c98a6d69ed46342a2b9fb3c7b8096ee4474a028454b2a1819f 606 main/binary-arm64/Packages.gz
+ d4de45ad5647f1f2662d63ca2c191b054c772daeef1a54ee93b691f1b86d83fc 1005 main/binary-arm64/Packages
+ 2372689a81366f78b5dfa0338626b43f2ffb8ce4768e244c9814fed15ac27a40 607 main/binary-arm64/Packages.gz
  b447bdbb1dd96ea99915be17818f25ec8b2f78bee6aa226da4751e4758078273 136 main/binary-arm64/Release
