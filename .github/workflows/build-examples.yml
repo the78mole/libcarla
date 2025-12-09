@@ -82,17 +82,18 @@ jobs:
           RUNNER_CODENAME=$(lsb_release -cs)
           
           # Create new sources.list with proper architecture tags
+          # Use RUNNER_CODENAME for native arch, CODENAME for target arch (ARM64)
           cat <<EOF | sudo tee /etc/apt/sources.list
-          # AMD64 repositories
+          # AMD64 repositories (native runner architecture)
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu $RUNNER_CODENAME main restricted universe multiverse
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu $RUNNER_CODENAME-updates main restricted universe multiverse
           deb [arch=amd64] http://archive.ubuntu.com/ubuntu $RUNNER_CODENAME-backports main restricted universe multiverse
           deb [arch=amd64] http://security.ubuntu.com/ubuntu $RUNNER_CODENAME-security main restricted universe multiverse
           
-          # ARM64 repositories from ports
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $RUNNER_CODENAME main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $RUNNER_CODENAME-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $RUNNER_CODENAME-security main restricted universe multiverse
+          # ARM64 repositories from ports (target Ubuntu version)
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $CODENAME-security main restricted universe multiverse
           EOF
           
           sudo apt-get update
