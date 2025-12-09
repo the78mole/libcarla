@@ -49,18 +49,26 @@ endif()
 # Simple client example
 add_executable(simple_client main.cpp)
 
-# Always link with Boost and pthread
-target_link_libraries(simple_client
-    PRIVATE
-        ${LIBCARLA_LIBRARIES}
-        Boost::filesystem
-        Boost::system
-        pthread
-)
-
-# Add include directories for system-installed libcarla
-if(NOT libcarla_FOUND)
+# Link libraries
+if(libcarla_FOUND)
+    # When using CMake package, use IMPORTED targets
+    target_link_libraries(simple_client
+        PRIVATE
+            ${LIBCARLA_LIBRARIES}
+            Boost::filesystem
+            Boost::system
+            pthread
+    )
+else()
+    # When using system libraries, ensure proper link order
     target_include_directories(simple_client PRIVATE ${LIBCARLA_INCLUDE_DIRS})
+    target_link_libraries(simple_client
+        PRIVATE
+            ${LIBCARLA_LIBRARIES}
+            ${Boost_FILESYSTEM_LIBRARY}
+            ${Boost_SYSTEM_LIBRARY}
+            pthread
+    )
 endif()
 
 # Install the example

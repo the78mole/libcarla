@@ -4,15 +4,41 @@ project(eabs_demo)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find LibCarla
-find_package(libcarla REQUIRED)
-
 # Find Mosquitto MQTT library
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
 
 # Find Boost
 find_package(Boost REQUIRED COMPONENTS system filesystem)
+
+# Try to find libcarla package config first
+find_package(libcarla QUIET)
+
+if(libcarla_FOUND)
+    message(STATUS "Found libcarla package")
+    set(LIBCARLA_LIBRARIES libcarla::carla_client)
+else()
+    message(STATUS "Using system-installed libcarla")
+    set(LIBCARLA_INCLUDE_DIRS /usr/include/carla)
+    
+    find_library(LIBCARLA_CLIENT_LIBRARY NAMES carla_client REQUIRED)
+    find_library(RPC_LIBRARY NAMES rpc REQUIRED)
+    find_library(RECAST_LIBRARY NAMES Recast REQUIRED)
+    find_library(DETOUR_LIBRARY NAMES Detour REQUIRED)
+    find_library(DETOURCROWD_LIBRARY NAMES DetourCrowd REQUIRED)
+    
+    if(NOT LIBCARLA_CLIENT_LIBRARY)
+        message(FATAL_ERROR "Could not find carla_client library")
+    endif()
+    
+    set(LIBCARLA_LIBRARIES 
+        ${LIBCARLA_CLIENT_LIBRARY}
+        ${RPC_LIBRARY}
+        ${RECAST_LIBRARY}
+        ${DETOUR_LIBRARY}
+        ${DETOURCROWD_LIBRARY}
+    )
+endif()
 
 # Create executable
 add_executable(eabs_demo
@@ -22,11 +48,18 @@ add_executable(eabs_demo
 # Link libraries
 target_link_libraries(eabs_demo
     PRIVATE
-        libcarla::carla_client
+        ${LIBCARLA_LIBRARIES}
         ${MOSQUITTO_LIBRARIES}
         Boost::system
         Boost::filesystem
+        pthread
 )
+
+# Add include directories for system-installed libcarla
+if(NOT libcarla_FOUND)
+    target_include_directories(eabs_demo PRIVATE ${LIBCARLA_INCLUDE_DIRS})
+    target_include_directories(eabs_demo PRIVATE ${MOSQUITTO_INCLUDE_DIRS})
+endif()
 
 # Include directories
 target_include_directories(eabs_demo
