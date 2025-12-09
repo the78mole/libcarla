@@ -22,3 +22,37 @@ Description: CARLA Simulator C++ Library
  - Complete C++ headers
 Homepage: https://github.com/the78mole/libcarla
 
+Package: libcarla-example-eabs-demo
+Version: 0.0.39
+Architecture: arm64
+Depends: libcarla (>= 0.0.39), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
+Maintainer: the78mole <the78mole@users.noreply.github.com>
+Priority: optional
+Section: devel
+Filename: pool/main/libc/libcarla-example-eabs-demo/libcarla-example-eabs-demo_0.0.39_arm64.deb
+Size: 1116586
+SHA256: a253ee398e0b03efd7d1c734d0bd5094d82b4a8de563fe88c1150d7c53bcd88e
+SHA1: 3729944098e5cd35590413118f4bf05e9b386bcc
+MD5sum: bb4edac06bc302f9d18b1f6980dd9c40
+Description: LibCarla Example - eabs_demo
+ Example application demonstrating the use of LibCarla client library.
+ This example shows how to connect to a CARLA server and interact with it.
+Homepage: https://github.com/the78mole/libcarla
+
+Package: libcarla-example-simple-client
+Version: 0.0.39
+Architecture: arm64
+Depends: libcarla (>= 0.0.39), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0
+Maintainer: the78mole <the78mole@users.noreply.github.com>
+Priority: optional
+Section: devel
+Filename: pool/main/libc/libcarla-example-simple-client/libcarla-example-simple-client_0.0.39_arm64.deb
+Size: 1071868
+SHA256: 7041617b4f5c65c0983b0546df9d72ba97760d2dabc8952da07da9b643e5c06c
+SHA1: ebc4df990f917d3ed21a32227f6b7ee535f0ce99
+MD5sum: 601cad891f09298ce6b2cbad8a644808
+Description: LibCarla Example - simple_client
+ Example application demonstrating the use of LibCarla client library.
+ This example shows how to connect to a CARLA server and interact with it.
+Homepage: https://github.com/the78mole/libcarla
+
