@@ -14,7 +14,7 @@ find_package(libcarla QUIET)
 if(libcarla_FOUND)
     message(STATUS "Found libcarla package")
     # Use the package targets
-    set(LIBCARLA_LIBRARIES carla::client)
+    set(LIBCARLA_LIBRARIES libcarla::carla_client)
 else()
     message(STATUS "Using system-installed libcarla")
     # Use system-installed libcarla (from .deb package)
@@ -71,3 +71,16 @@ endif()
 install(TARGETS simple_client
     RUNTIME DESTINATION bin
 )
+
+# CPack configuration for creating Debian package
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_NAME "libcarla-example-simple-client")
+set(CPACK_PACKAGE_VERSION "0.0.19")
+set(CPACK_PACKAGE_CONTACT "Daniel Wirtz <daniel@the78mole.de>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simple CARLA client example")
+set(CPACK_PACKAGE_DESCRIPTION "A basic example demonstrating how to connect to CARLA simulator, spawn a vehicle, and enable autopilot.")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libcarla (>= 0.0.19), libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0")
+set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+
+include(CPack)
