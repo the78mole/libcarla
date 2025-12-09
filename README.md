@@ -6,6 +6,8 @@
 [![APT Repository](https://img.shields.io/badge/APT-Repository-blue)](https://the78mole.github.io/libcarla)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/the78mole/libcarla)
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/the78mole/libcarla)
+
 A standalone repository containing only the LibCarla library from the [CARLA Simulator](https://github.com/carla-simulator/carla) (version 0.9.16).
 
 ## Overview

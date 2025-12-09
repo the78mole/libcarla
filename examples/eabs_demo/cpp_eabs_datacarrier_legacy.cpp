@@ -32,7 +32,6 @@
 #include <thread>
 #include <tuple>
 #include <vector>
-#include <sched.h>
 
 #include "mqtt_metrics.h"
 
@@ -632,28 +631,6 @@ int main(int argc, char *argv[]) {
     log_print("  sync flag = ", (opt.sync ? "true" : "false"));
     log_print("  mqtt host = ", opt.mqtt_host);
     log_print("  mqtt port = ", opt.mqtt_port);
-
-
-
-    // Set real-time scheduling (optional, may require privileges)
-    //int policy
-    struct sched_param param;
-    sched_getparam(0, &param);
-    param.sched_priority = 10;
-    //int policy = sched_getscheduler(0);
-    //Scheduler Priorities: 
-    // Deadline: SCHED_DEADLINE
-    // Realtime: SCHED_RR, SCHED_FIFO 
-    // Fair: SCHED_NORMAL, SCHED_OTHER
-    if (sched_setscheduler(0, SCHED_RR, &param) == -1) {
-        std::cerr << "Failed to set scheduler and or priority: " 
-                  << strerror(errno) << std::endl;
-        return 1;
-    }
-    
-    //int sched_setscheduler(0, int policy, const struct sched_param *param);
-
-
 
     ExternalController controller(opt.host, opt.port, opt.role_name, opt.sync);
 

@@ -40,15 +40,28 @@ else()
     )
 endif()
 
-# Create executable
+# Create executables
 add_executable(eabs_demo
     cpp_eabs_datacarrier.cpp
+)
+
+add_executable(eabs_demo_nonrt
+    cpp_eabs_datacarrier_legacy.cpp
 )
 
 # Link libraries
 if(libcarla_FOUND)
     # When using CMake package, use IMPORTED targets
     target_link_libraries(eabs_demo
+        PRIVATE
+            ${LIBCARLA_LIBRARIES}
+            ${MOSQUITTO_LIBRARIES}
+            Boost::system
+            Boost::filesystem
+            pthread
+    )
+    
+    target_link_libraries(eabs_demo_nonrt
         PRIVATE
             ${LIBCARLA_LIBRARIES}
             ${MOSQUITTO_LIBRARIES}
@@ -70,29 +83,54 @@ else()
             Boost::filesystem
             pthread
     )
+    
+    target_link_libraries(eabs_demo_nonrt
+        PRIVATE
+            ${LIBCARLA_LIBRARIES}
+            ${MOSQUITTO_LIBRARIES}
+            Boost::system
+            Boost::filesystem
+            pthread
+    )
 endif()
 
-# Include directories
+# Include directories for both executables
 target_include_directories(eabs_demo
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${MOSQUITTO_INCLUDE_DIRS}
 )
 
-# Compiler flags
+target_include_directories(eabs_demo_nonrt
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${MOSQUITTO_INCLUDE_DIRS}
+)
+
+# Compiler flags for both executables
 target_compile_options(eabs_demo
     PRIVATE
         ${MOSQUITTO_CFLAGS_OTHER}
 )
 
-# Link directories
+target_compile_options(eabs_demo_nonrt
+    PRIVATE
+        ${MOSQUITTO_CFLAGS_OTHER}
+)
+
+# Link directories for both executables
 target_link_directories(eabs_demo
     PRIVATE
         ${MOSQUITTO_LIBRARY_DIRS}
 )
 
+target_link_directories(eabs_demo_nonrt
+    PRIVATE
+        ${MOSQUITTO_LIBRARY_DIRS}
+)
+
 # Installation
-install(TARGETS eabs_demo
+install(TARGETS eabs_demo eabs_demo_nonrt
     RUNTIME DESTINATION bin
 )
 
