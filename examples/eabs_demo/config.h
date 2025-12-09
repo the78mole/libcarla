@@ -39,6 +39,11 @@ public:
     double lateral_extra_margin() const { return lateral_extra_margin_; }
     double min_v_rel() const { return min_v_rel_; }
 
+    // Scheduler settings
+    int sched_priority() const { return sched_priority_; }
+    int sched_policy() const { return sched_policy_; }
+    int sched_deadline_runtime() const { return sched_deadline_runtime_; }  // in microseconds
+
 private:
     Config();
     ~Config() = default;
@@ -68,4 +73,9 @@ private:
     double ttc_strong_brakes_;
     double lateral_extra_margin_;
     double min_v_rel_;
+
+    // Scheduler settings
+    int sched_priority_;
+    int sched_policy_;
+    int sched_deadline_runtime_;  // in microseconds
 };

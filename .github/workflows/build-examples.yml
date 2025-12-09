@@ -259,6 +259,7 @@ jobs:
           mkdir -p "${PACKAGE_DIR}/DEBIAN"
           mkdir -p "${PACKAGE_DIR}/usr/bin"
           mkdir -p "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}"
+          mkdir -p "${PACKAGE_DIR}/etc/libcarla"
           
           # Copy binary
           cp "examples/${EXAMPLE}/build/${EXAMPLE}" "${PACKAGE_DIR}/usr/bin/${EXAMPLE}"
@@ -267,6 +268,11 @@ jobs:
           # Copy README if exists
           if [ -f "examples/${EXAMPLE}/README.md" ]; then
             cp "examples/${EXAMPLE}/README.md" "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/"
+          fi
+          
+          # Copy INI config file if exists (for eabs_demo)
+          if [ -f "examples/${EXAMPLE}/${EXAMPLE}.ini" ]; then
+            cp "examples/${EXAMPLE}/${EXAMPLE}.ini" "${PACKAGE_DIR}/etc/libcarla/${EXAMPLE}.ini"
           fi
           
           # Create control file

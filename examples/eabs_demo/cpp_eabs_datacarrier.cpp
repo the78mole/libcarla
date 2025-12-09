@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -33,6 +34,8 @@
 #include <tuple>
 #include <vector>
 #include <sched.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 
 #include "mqtt_metrics.h"
 #include "config.h"
@@ -574,8 +577,15 @@ private:
 int main(int argc, char *argv[]) {
   try {
     // Initialize configuration from INI file and command line
+    // Try system config first, then local config
     Config& cfg = Config::GetInstance();
-    cfg.Initialize("eabs_demo.ini", argc, argv);
+    const char* config_file = "/etc/libcarla/eabs_demo.ini";
+    std::ifstream test_file(config_file);
+    if (!test_file.good()) {
+      config_file = "eabs_demo.ini";
+    }
+    test_file.close();
+    cfg.Initialize(config_file, argc, argv);
 
     // Open log file if logging to file is enabled
     if (cfg.log_enabled() && cfg.log_to_file()) {
@@ -599,26 +609,70 @@ int main(int argc, char *argv[]) {
     log_print("  ttc warn  = ", cfg.ttc_warning());
     log_print("  ttc mild  = ", cfg.ttc_mild_braking());
     log_print("  ttc strong= ", cfg.ttc_strong_brakes());
-
-
+    log_print("  sched priority = ", cfg.sched_priority());
+    log_print("  sched policy   = ", cfg.sched_policy());
+    log_print("  sched deadline runtime = ", cfg.sched_deadline_runtime(), " us");
 
     // Set real-time scheduling (optional, may require privileges)
-    //int policy
-    struct sched_param param;
-    sched_getparam(0, &param);
-    param.sched_priority = 10;
-    //int policy = sched_getscheduler(0);
-    //Scheduler Priorities: 
-    // Deadline: SCHED_DEADLINE
-    // Realtime: SCHED_RR, SCHED_FIFO 
-    // Fair: SCHED_NORMAL, SCHED_OTHER
-    if (sched_setscheduler(0, SCHED_RR, &param) == -1) {
-        std::cerr << "Failed to set scheduler and or priority: " 
-                  << strerror(errno) << std::endl;
-        return 1;
-    }
+    // Scheduler Policies: 
+    // Deadline: SCHED_DEADLINE (6) - highest priority, requires additional attributes
+    // Realtime: SCHED_FIFO (1), SCHED_RR (2) - static priority scheduling
+    // Fair: SCHED_OTHER/SCHED_NORMAL (0) - default time-sharing
     
-    //int sched_setscheduler(0, int policy, const struct sched_param *param);
+    const int policy = cfg.sched_policy();
+    
+    if (policy == 6) {  // SCHED_DEADLINE
+        // For SCHED_DEADLINE, we need to use sched_setattr with deadline attributes
+        #ifdef __NR_sched_setattr
+        struct sched_attr {
+            uint32_t size;
+            uint32_t sched_policy;
+            uint64_t sched_flags;
+            int32_t  sched_nice;
+            uint32_t sched_priority;
+            uint64_t sched_runtime;
+            uint64_t sched_deadline;
+            uint64_t sched_period;
+        } attr;
+        
+        memset(&attr, 0, sizeof(attr));
+        attr.size = sizeof(attr);
+        attr.sched_policy = 6;  // SCHED_DEADLINE
+        attr.sched_flags = 0;
+        // For SCHED_DEADLINE: runtime <= deadline <= period
+        attr.sched_runtime  = cfg.sched_deadline_runtime() * 1000ULL;  // convert µs to ns
+        attr.sched_deadline = cfg.sched_deadline_runtime() * 1000ULL;  // same as runtime
+        attr.sched_period   = cfg.sched_deadline_runtime() * 1000ULL;  // same as runtime
+        
+        if (syscall(__NR_sched_setattr, 0, &attr, 0) == -1) {
+            std::cerr << "Failed to set SCHED_DEADLINE: " 
+                      << strerror(errno) << std::endl;
+            std::cerr << "Note: SCHED_DEADLINE requires CAP_SYS_NICE capability or root privileges" << std::endl;
+        } else {
+            log_print("Apply EABS C++: SCHED_DEADLINE set successfully (runtime=", 
+                      cfg.sched_deadline_runtime(), "µs)");
+        }
+        #else
+        std::cerr << "SCHED_DEADLINE not supported on this system" << std::endl;
+        #endif
+    } else {
+        // For other schedulers, use standard sched_setscheduler
+        struct sched_param param;
+        param.sched_priority = cfg.sched_priority();
+        
+        if (sched_setscheduler(0, policy, &param) == -1) {
+            std::cerr << "Failed to set scheduler and/or priority: " 
+                      << strerror(errno) << std::endl;
+            std::cerr << "Note: Real-time scheduling requires CAP_SYS_NICE capability or root privileges" << std::endl;
+        } else {
+            const char* policy_name = 
+                policy == 0 ? "SCHED_OTHER" :
+                policy == 1 ? "SCHED_FIFO" :
+                policy == 2 ? "SCHED_RR" : "UNKNOWN";
+            log_print("Apply EABS C++: Scheduler set to ", policy_name, 
+                      " with priority ", cfg.sched_priority());
+        }
+    }
 
 
 

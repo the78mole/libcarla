@@ -36,6 +36,11 @@ void Config::LoadDefaults() {
     ttc_strong_brakes_ = 1.5;
     lateral_extra_margin_ = 0.5;
     min_v_rel_ = 0.05;
+
+    // Scheduler settings (SCHED_RR = 2)
+    sched_priority_ = 10;
+    sched_policy_ = 2;  // SCHED_RR
+    sched_deadline_runtime_ = 3000;  // 3ms in microseconds
 }
 
 void Config::Initialize(const std::string& ini_file, int argc, char* argv[]) {
@@ -130,6 +135,12 @@ void Config::LoadFromIni(const std::string& filename) {
                 lateral_extra_margin_ = std::stod(value);
             } else if (key == "min_v_rel") {
                 min_v_rel_ = std::stod(value);
+            } else if (key == "sched_priority") {
+                sched_priority_ = std::stoi(value);
+            } else if (key == "sched_policy") {
+                sched_policy_ = std::stoi(value);
+            } else if (key == "sched_deadline_runtime") {
+                sched_deadline_runtime_ = std::stoi(value);
             }
         }
     }
@@ -161,6 +172,12 @@ void Config::ParseCommandLine(int argc, char* argv[]) {
             ttc_mild_braking_ = std::stod(argv[++i]);
         } else if (arg == "--ttc-strong" && (i + 1 < argc)) {
             ttc_strong_brakes_ = std::stod(argv[++i]);
+        } else if (arg == "--sched-priority" && (i + 1 < argc)) {
+            sched_priority_ = std::stoi(argv[++i]);
+        } else if (arg == "--sched-policy" && (i + 1 < argc)) {
+            sched_policy_ = std::stoi(argv[++i]);
+        } else if (arg == "--sched-deadline-runtime" && (i + 1 < argc)) {
+            sched_deadline_runtime_ = std::stoi(argv[++i]);
         } else if (arg == "--help") {
             std::cout
                 << "Usage: eabs_demo [options]\n"
@@ -176,6 +193,9 @@ void Config::ParseCommandLine(int argc, char* argv[]) {
                 << "      --ttc-warning SEC  TTC warning threshold (default: 2.5)\n"
                 << "      --ttc-mild SEC     TTC mild braking threshold (default: 2.0)\n"
                 << "      --ttc-strong SEC   TTC strong braking threshold (default: 1.5)\n"
+                << "      --sched-priority N Scheduler priority (default: 10)\n"
+                << "      --sched-policy N   Scheduler policy: 0=OTHER, 1=FIFO, 2=RR, 6=DEADLINE (default: 2)\n"
+                << "      --sched-deadline-runtime US  SCHED_DEADLINE runtime in microseconds (default: 3000)\n"
                 << "\n"
                 << "Configuration file: eabs_demo.ini (optional)\n";
             std::exit(0);
