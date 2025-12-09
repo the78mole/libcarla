@@ -148,6 +148,10 @@ jobs:
               sudo cp -r libcarla-extracted/usr/include/recast /usr/aarch64-linux-gnu/include/
               echo "Copied recast includes"
             fi
+            if [ -d libcarla-extracted/usr/include/rpc ]; then
+              sudo cp -r libcarla-extracted/usr/include/rpc /usr/aarch64-linux-gnu/include/
+              echo "Copied rpc includes"
+            fi
           else
             # For amd64, install normally
             sudo dpkg -i libcarla.deb || true
