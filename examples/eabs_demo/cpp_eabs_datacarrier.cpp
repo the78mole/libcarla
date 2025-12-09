@@ -35,6 +35,7 @@
 #include <sched.h>
 
 #include "mqtt_metrics.h"
+#include "config.h"
 
 namespace cc  = carla::client;
 namespace cg  = carla::geom;
@@ -45,18 +46,15 @@ using namespace std::chrono_literals;
 // Logging
 // ----------------------------------------------------------------------------
 
-static const bool LOG_ENABLED  = false;   // set false to disable all logging
-static const bool LOG_TO_FILE  = true;   // true -> file, false -> stdout
-static const char *LOG_FILE    = "apply_eabs.log";
-
-static std::ofstream g_log_file(LOG_TO_FILE ? LOG_FILE : nullptr);
+static std::ofstream g_log_file;
 
 template<typename... Args>
 void log_print(Args&&... args) {
-  if (!LOG_ENABLED) return;
+  const Config& cfg = Config::GetInstance();
+  if (!cfg.log_enabled()) return;
 
   std::ostream *os = &std::cout;
-  if (LOG_TO_FILE && g_log_file.is_open()) {
+  if (cfg.log_to_file() && g_log_file.is_open()) {
     os = &g_log_file;
   }
 
@@ -391,13 +389,13 @@ private:
   }
 
   int CalculateEABSStatus() {
-    // TTC thresholds (seconds)
-    const double ttc_warning       = 2.5;
-    const double ttc_mild_braking  = 2.0;
-    const double ttc_strong_brakes = 1.5;
-
-    const double lateral_extra_margin = 0.5; // [m] tolerate slight offset
-    const double min_v_rel            = 0.05; // [m/s] ignore almost-zero closing
+    // Get thresholds from configuration
+    const Config& cfg = Config::GetInstance();
+    const double ttc_warning       = cfg.ttc_warning();
+    const double ttc_mild_braking  = cfg.ttc_mild_braking();
+    const double ttc_strong_brakes = cfg.ttc_strong_brakes();
+    const double lateral_extra_margin = cfg.lateral_extra_margin();
+    const double min_v_rel            = cfg.min_v_rel();
 
     auto ego = _ego_vehicle;
     if (!ego) {
@@ -567,48 +565,7 @@ private:
 // Command-line parsing
 // ----------------------------------------------------------------------------
 
-struct Options {
-  std::string host      = "localhost";
-  uint16_t    port      = 2000;
-  std::string role_name = "hero";
-  bool        sync      = false;
-  std::string mqtt_host = "localhost";
-  int         mqtt_port = 1883;
-};
-
-Options ParseOptions(int argc, char *argv[]) {
-  Options opt;
-
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-    if ((arg == "-h" || arg == "--host") && (i + 1 < argc)) {
-      opt.host = argv[++i];
-    } else if ((arg == "-p" || arg == "--port") && (i + 1 < argc)) {
-      opt.port = static_cast<uint16_t>(std::stoi(argv[++i]));
-    } else if (arg == "--rolename" && (i + 1 < argc)) {
-      opt.role_name = argv[++i];
-    } else if (arg == "--sync") {
-      opt.sync = true;
-    } else if (arg == "--mqtt-host" && (i + 1 < argc)) {
-      opt.mqtt_host = argv[++i];
-    } else if (arg == "--mqtt-port" && (i + 1 < argc)) {
-      opt.mqtt_port = std::stoi(argv[++i]);
-    } else if (arg == "--help") {
-      std::cout
-        << "Usage: external_controller_eabs [options]\n"
-        << "Options:\n"
-        << "  -h, --host HOST        CARLA server host (default: localhost)\n"
-        << "  -p, --port PORT        CARLA server port (default: 2000)\n"
-        << "      --rolename NAME    Ego vehicle role_name (default: hero)\n"
-        << "      --sync             (Reserved) synchronous mode flag\n"
-        << "      --mqtt-host HOST   MQTT broker host (default: localhost)\n"
-        << "      --mqtt-port PORT   MQTT broker port (default: 1883)\n";
-      std::exit(0);
-    }
-  }
-
-  return opt;
-}
+// Configuration is now handled by Config singleton
 
 // ----------------------------------------------------------------------------
 // main()
@@ -616,22 +573,32 @@ Options ParseOptions(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   try {
-    Options opt = ParseOptions(argc, argv);
+    // Initialize configuration from INI file and command line
+    Config& cfg = Config::GetInstance();
+    cfg.Initialize("eabs_demo.ini", argc, argv);
 
-    // Create and start MQTT metrics with CLI values
+    // Open log file if logging to file is enabled
+    if (cfg.log_enabled() && cfg.log_to_file()) {
+      g_log_file.open(cfg.log_file());
+    }
+
+    // Create and start MQTT metrics with configured values
     g_metrics = std::make_unique<MqttMetrics>(
-        opt.mqtt_host,
-        opt.mqtt_port,
+        cfg.mqtt_host(),
+        cfg.mqtt_port(),
         "eabs_cpp_client");
     g_metrics->Start();
 
     log_print("Apply EABS C++: starting with");
-    log_print("  host      = ", opt.host);
-    log_print("  port      = ", opt.port);
-    log_print("  rolename  = ", opt.role_name);
-    log_print("  sync flag = ", (opt.sync ? "true" : "false"));
-    log_print("  mqtt host = ", opt.mqtt_host);
-    log_print("  mqtt port = ", opt.mqtt_port);
+    log_print("  host      = ", cfg.carla_host());
+    log_print("  port      = ", cfg.carla_port());
+    log_print("  rolename  = ", cfg.role_name());
+    log_print("  sync flag = ", (cfg.sync_mode() ? "true" : "false"));
+    log_print("  mqtt host = ", cfg.mqtt_host());
+    log_print("  mqtt port = ", cfg.mqtt_port());
+    log_print("  ttc warn  = ", cfg.ttc_warning());
+    log_print("  ttc mild  = ", cfg.ttc_mild_braking());
+    log_print("  ttc strong= ", cfg.ttc_strong_brakes());
 
 
 
@@ -655,7 +622,7 @@ int main(int argc, char *argv[]) {
 
 
 
-    ExternalController controller(opt.host, opt.port, opt.role_name, opt.sync);
+    ExternalController controller(cfg.carla_host(), cfg.carla_port(), cfg.role_name(), cfg.sync_mode());
 
     try {
       controller.Run();

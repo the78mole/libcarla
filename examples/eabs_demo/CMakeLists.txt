@@ -43,10 +43,12 @@ endif()
 # Create executables
 add_executable(eabs_demo
     cpp_eabs_datacarrier.cpp
+    config.cpp
 )
 
 add_executable(eabs_demo_nonrt
     cpp_eabs_datacarrier_legacy.cpp
+    config.cpp
 )
 
 # Link libraries
@@ -132,6 +134,11 @@ target_link_directories(eabs_demo_nonrt
 # Installation
 install(TARGETS eabs_demo eabs_demo_nonrt
     RUNTIME DESTINATION bin
+)
+
+# Install configuration file
+install(FILES eabs_demo.ini
+    DESTINATION etc
 )
 
 # Install README if it exists
