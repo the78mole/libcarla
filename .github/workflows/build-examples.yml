@@ -252,8 +252,9 @@ jobs:
           
           # Replace underscores with hyphens for Debian package naming
           PACKAGE_NAME="libcarla-example-${EXAMPLE//_/-}"
-          PACKAGE_VERSION="${VERSION}"
-          PACKAGE_DIR="${PACKAGE_NAME}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}"
+          # Include Ubuntu version in package version to avoid conflicts in APT repo
+          PACKAGE_VERSION="${VERSION}+ubuntu${UBUNTU_VERSION}"
+          PACKAGE_DIR="${PACKAGE_NAME}_${PACKAGE_VERSION}_${ARCH}"
           
           # Create package structure
           mkdir -p "${PACKAGE_DIR}/DEBIAN"
