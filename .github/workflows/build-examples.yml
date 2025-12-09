@@ -50,8 +50,7 @@ jobs:
             build-essential \
             cmake \
             wget \
-            libboost-filesystem-dev \
-            libboost-system-dev
+            pkg-config
 
       - name: Set up cross-compilation for ARM64
         if: matrix.arch == 'arm64'
@@ -67,9 +66,6 @@ jobs:
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main universe" | sudo tee /etc/apt/sources.list.d/arm64.list
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main universe" | sudo tee -a /etc/apt/sources.list.d/arm64.list
           sudo apt-get update
-          sudo apt-get install -y \
-            libboost-filesystem-dev:arm64 \
-            libboost-system-dev:arm64
 
       - name: Download LibCarla package
         run: |
@@ -91,6 +87,41 @@ jobs:
         run: |
           sudo dpkg -i libcarla.deb || true
           sudo apt-get install -f -y
+
+      - name: Install Example Dependencies
+        run: |
+          EXAMPLE="${{ matrix.example }}"
+          ARCH="${{ matrix.arch }}"
+          
+          # Extract dependencies from CMakeLists.txt
+          if [ -f "examples/${EXAMPLE}/CMakeLists.txt" ]; then
+            echo "Extracting dependencies from CMakeLists.txt for ${EXAMPLE}..."
+            
+            # Make script executable
+            chmod +x scripts/extract-cmake-deps.sh
+            
+            # Extract dependencies
+            DEPS=$(./scripts/extract-cmake-deps.sh "examples/${EXAMPLE}/CMakeLists.txt")
+            
+            if [ -n "$DEPS" ]; then
+              echo "Found dependencies: $DEPS"
+              
+              if [ "$ARCH" = "arm64" ]; then
+                # For ARM64, install cross-arch dependencies
+                DEPS_ARM64=$(echo "$DEPS" | sed 's/\b\([^ ]*\)\b/\1:arm64/g')
+                echo "Installing ARM64 dependencies: $DEPS_ARM64"
+                sudo apt-get install -y $DEPS_ARM64
+              else
+                # For amd64, install native dependencies
+                echo "Installing native dependencies: $DEPS"
+                sudo apt-get install -y $DEPS
+              fi
+            else
+              echo "No additional dependencies found in CMakeLists.txt"
+            fi
+          else
+            echo "No CMakeLists.txt found for ${EXAMPLE}, skipping..."
+          fi
 
       - name: Build Example
         working-directory: examples/${{ matrix.example }}
