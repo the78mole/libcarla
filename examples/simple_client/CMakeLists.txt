@@ -49,22 +49,18 @@ endif()
 # Simple client example
 add_executable(simple_client main.cpp)
 
-if(libcarla_FOUND)
-    target_link_libraries(simple_client
-        PRIVATE
-            ${LIBCARLA_LIBRARIES}
-            Boost::filesystem
-            Boost::system
-    )
-else()
+# Always link with Boost and pthread
+target_link_libraries(simple_client
+    PRIVATE
+        ${LIBCARLA_LIBRARIES}
+        Boost::filesystem
+        Boost::system
+        pthread
+)
+
+# Add include directories for system-installed libcarla
+if(NOT libcarla_FOUND)
     target_include_directories(simple_client PRIVATE ${LIBCARLA_INCLUDE_DIRS})
-    target_link_libraries(simple_client
-        PRIVATE
-            ${LIBCARLA_LIBRARIES}
-            Boost::filesystem
-            Boost::system
-            pthread
-    )
 endif()
 
 # Install the example

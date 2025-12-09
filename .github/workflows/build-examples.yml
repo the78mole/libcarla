@@ -25,6 +25,7 @@ jobs:
       matrix:
         example:
           - simple_client
+          - eabs_demo
         ubuntu: ['22.04', '24.04']
         arch: ['amd64', 'arm64']
         include:
@@ -127,7 +128,8 @@ jobs:
           ARCH="${{ matrix.arch }}"
           EXAMPLE="${{ matrix.example }}"
           
-          PACKAGE_NAME="libcarla-example-${EXAMPLE}"
+          # Replace underscores with hyphens for Debian package naming
+          PACKAGE_NAME="libcarla-example-${EXAMPLE//_/-}"
           PACKAGE_VERSION="${VERSION}"
           PACKAGE_DIR="${PACKAGE_NAME}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}"
           
@@ -163,11 +165,11 @@ jobs:
           # Build the package
           dpkg-deb --build "${PACKAGE_DIR}"
           
-          # Rename to standard format
-          mv "${PACKAGE_DIR}.deb" "libcarla-example-${EXAMPLE}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+          # Rename to standard format (replace underscores in example name)
+          mv "${PACKAGE_DIR}.deb" "libcarla-example-${EXAMPLE//_/-}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
           
           echo "Created package:"
-          ls -lh "libcarla-example-${EXAMPLE}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+          ls -lh "libcarla-example-${EXAMPLE//_/-}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
 
       - name: Upload Package Artifact
         uses: actions/upload-artifact@v4
