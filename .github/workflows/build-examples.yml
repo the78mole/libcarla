@@ -20,22 +20,20 @@ permissions:
 jobs:
   build-examples:
     name: Build Example - ${{ matrix.example }} (${{ matrix.ubuntu }}, ${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         example:
           - simple_client
           - eabs_demo
-        ubuntu: ['22.04', '24.04']
+        ubuntu: ['22.04']
         arch: ['amd64', 'arm64']
         include:
-          # amd64 builds run on ubuntu-latest
+          # amd64 builds
           - arch: amd64
-            runner: ubuntu-latest
             target_arch: x86_64
-          # arm64 builds also run on ubuntu-latest with cross-compilation
+          # arm64 builds with cross-compilation
           - arch: arm64
-            runner: ubuntu-latest
             target_arch: aarch64
       fail-fast: false
 
