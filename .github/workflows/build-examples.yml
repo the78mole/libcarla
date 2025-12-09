@@ -303,7 +303,7 @@ jobs:
     name: Upload Examples to Release
     needs: build-examples
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_call'
+    if: inputs.release_tag != ''
     steps:
       - name: Download All Example Artifacts
         uses: actions/download-artifact@v4
@@ -329,7 +329,7 @@ jobs:
     name: Add Examples to APT Repository
     needs: [build-examples, upload-to-release]
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_call'
+    if: inputs.release_tag != ''
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -360,11 +360,9 @@ jobs:
         working-directory: public_repo
         run: |
           # Add new .deb packages
-          for deb in ../example-packages/**/*.deb; do
-            if [ -f "$deb" ]; then
-              echo "Adding $deb to APT repository..."
-              reprepro -b . includedeb stable "$deb" || echo "Failed to add $deb, continuing..."
-            fi
+          find ../example-packages -type f -name "*.deb" | while read -r deb; do
+            echo "Adding $deb to APT repository..."
+            reprepro -b . includedeb stable "$deb" || echo "Failed to add $deb, continuing..."
           done
 
       - name: Configure git
@@ -388,7 +386,7 @@ jobs:
     name: Build Summary
     needs: [build-examples, upload-to-release, update-apt-repo]
     runs-on: ubuntu-latest
-    if: always() && github.event_name == 'workflow_call'
+    if: always() && inputs.release_tag != ''
     steps:
       - name: Check build results
         run: |
