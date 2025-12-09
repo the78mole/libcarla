@@ -63,12 +63,13 @@ else()
     # When using system libraries, link explicitly
     target_include_directories(simple_client PRIVATE ${LIBCARLA_INCLUDE_DIRS})
     
-    # Link with explicit library files
+    # For system-installed libcarla, we need to use Boost IMPORTED targets
+    # to ensure we link against the same Boost version as libcarla
     target_link_libraries(simple_client
         PRIVATE
             ${LIBCARLA_LIBRARIES}
-            boost_filesystem
-            boost_system
+            Boost::filesystem
+            Boost::system
             pthread
     )
 endif()

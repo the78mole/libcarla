@@ -99,6 +99,14 @@ jobs:
         run: |
           EXAMPLE="${{ matrix.example }}"
           ARCH="${{ matrix.arch }}"
+          UBUNTU_VERSION="${{ matrix.ubuntu }}"
+          
+          # Determine the correct Boost version for the Ubuntu version
+          case "$UBUNTU_VERSION" in
+            22.04) BOOST_VERSION="1.74.0" ;;
+            24.04) BOOST_VERSION="1.83.0" ;;
+            *) BOOST_VERSION="" ;;
+          esac
           
           # Extract dependencies from CMakeLists.txt
           if [ -f "examples/${EXAMPLE}/CMakeLists.txt" ]; then
@@ -112,6 +120,15 @@ jobs:
             
             if [ -n "$DEPS" ]; then
               echo "Found dependencies: $DEPS"
+              
+              # Replace Boost metapackages with specific version packages
+              if [ -n "$BOOST_VERSION" ]; then
+                # Package naming: libboost-filesystem1.74-dev (major.minor only)
+                BOOST_PKG_VERSION=$(echo "$BOOST_VERSION" | cut -d'.' -f1,2)
+                echo "Pinning Boost to version $BOOST_PKG_VERSION for Ubuntu $UBUNTU_VERSION"
+                DEPS=$(echo "$DEPS" | sed "s/libboost-filesystem-dev/libboost-filesystem${BOOST_PKG_VERSION}-dev/g")
+                DEPS=$(echo "$DEPS" | sed "s/libboost-system-dev/libboost-system${BOOST_PKG_VERSION}-dev/g")
+              fi
               
               if [ "$ARCH" = "arm64" ]; then
                 # For ARM64, install cross-arch dependencies
@@ -200,16 +217,14 @@ jobs:
           Homepage: https://github.com/${{ github.repository }}
           EOF
           
-          # Build the package
+          # Build the package (automatically names it ${PACKAGE_DIR}.deb)
           dpkg-deb --build "${PACKAGE_DIR}"
           
-          # Rename to standard format (replace underscores in example name)
-          mv "${PACKAGE_DIR}.deb" "libcarla-example-${EXAMPLE//_/-}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
-          
           echo "Created package:"
-          ls -lh "libcarla-example-${EXAMPLE//_/-}_${PACKAGE_VERSION}-ubuntu-${UBUNTU_VERSION}_${ARCH}.deb"
+          ls -lh "${PACKAGE_DIR}.deb"
 
       - name: Upload Package Artifact
+        if: ${{ ! env.ACT }}
         uses: actions/upload-artifact@v4
         with:
           name: libcarla-example-${{ matrix.example }}-ubuntu${{ matrix.ubuntu }}-${{ matrix.arch }}
@@ -306,7 +321,7 @@ jobs:
     name: Build Summary
     needs: [build-examples, upload-to-release, update-apt-repo]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name == 'workflow_call'
     steps:
       - name: Check build results
         run: |

@@ -57,7 +57,8 @@ if(libcarla_FOUND)
             pthread
     )
 else()
-    # When using system libraries, link explicitly
+    # When using system libraries, link explicitly with IMPORTED targets
+    # to ensure we link against the same Boost version as libcarla
     target_include_directories(eabs_demo PRIVATE ${LIBCARLA_INCLUDE_DIRS})
     target_include_directories(eabs_demo PRIVATE ${MOSQUITTO_INCLUDE_DIRS})
     
@@ -65,8 +66,8 @@ else()
         PRIVATE
             ${LIBCARLA_LIBRARIES}
             ${MOSQUITTO_LIBRARIES}
-            boost_system
-            boost_filesystem
+            Boost::system
+            Boost::filesystem
             pthread
     )
 endif()
