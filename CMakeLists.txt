@@ -29,6 +29,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Suppress Boost deprecation messages by defining the silence macro
+add_compile_definitions(BOOST_ALLOW_DEPRECATED_HEADERS)
+
 # Force static linking for self-contained builds
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libraries" FORCE)
 
