@@ -46,19 +46,29 @@ add_executable(eabs_demo
 )
 
 # Link libraries
-target_link_libraries(eabs_demo
-    PRIVATE
-        ${LIBCARLA_LIBRARIES}
-        ${MOSQUITTO_LIBRARIES}
-        Boost::system
-        Boost::filesystem
-        pthread
-)
-
-# Add include directories for system-installed libcarla
-if(NOT libcarla_FOUND)
+if(libcarla_FOUND)
+    # When using CMake package, use IMPORTED targets
+    target_link_libraries(eabs_demo
+        PRIVATE
+            ${LIBCARLA_LIBRARIES}
+            ${MOSQUITTO_LIBRARIES}
+            Boost::system
+            Boost::filesystem
+            pthread
+    )
+else()
+    # When using system libraries, link explicitly
     target_include_directories(eabs_demo PRIVATE ${LIBCARLA_INCLUDE_DIRS})
     target_include_directories(eabs_demo PRIVATE ${MOSQUITTO_INCLUDE_DIRS})
+    
+    target_link_libraries(eabs_demo
+        PRIVATE
+            ${LIBCARLA_LIBRARIES}
+            ${MOSQUITTO_LIBRARIES}
+            boost_system
+            boost_filesystem
+            pthread
+    )
 endif()
 
 # Include directories

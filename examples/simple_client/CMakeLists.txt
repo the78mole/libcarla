@@ -60,13 +60,15 @@ if(libcarla_FOUND)
             pthread
     )
 else()
-    # When using system libraries, ensure proper link order
+    # When using system libraries, link explicitly
     target_include_directories(simple_client PRIVATE ${LIBCARLA_INCLUDE_DIRS})
+    
+    # Link with explicit library files
     target_link_libraries(simple_client
         PRIVATE
             ${LIBCARLA_LIBRARIES}
-            ${Boost_FILESYSTEM_LIBRARY}
-            ${Boost_SYSTEM_LIBRARY}
+            boost_filesystem
+            boost_system
             pthread
     )
 endif()
