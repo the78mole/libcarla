@@ -1,15 +1,15 @@
 Package: libcarla
-Version: 0.0.46+ubuntu24.04
+Version: 0.0.47+ubuntu24.04
 Architecture: arm64
 Depends: libboost-filesystem1.74.0 | libboost-filesystem1.83.0, libboost-system1.74.0 | libboost-system1.83.0, libpng16-16, libjpeg8 | libjpeg-turbo8, libtiff5 | libtiff6, zlib1g
 Maintainer: LibCarla Team <libcarla@example.com>
 Priority: optional
 Section: libs
-Filename: pool/main/libc/libcarla/libcarla_0.0.46+ubuntu24.04_arm64.deb
-Size: 2408830
-SHA256: 19b16508ef741c1b0f53d57647e7eb33ad2b36c75b8b317f2980e5449defce7b
-SHA1: 8192a94213a8539cbcef96af977a83c4888c7052
-MD5sum: a6fcfef1824dd386e7205798e59f7728
+Filename: pool/main/libc/libcarla/libcarla_0.0.47+ubuntu24.04_arm64.deb
+Size: 2409714
+SHA256: c1f4722d41cf2f60ce551340076916c7ef22db6eb5db5d1d5db15701db2aeea3
+SHA1: f78e6d51fc88a254086abfe22f0a73314f7c7977
+MD5sum: 96af82ff60c0231651697b31027bb886
 Description: CARLA Simulator C++ Library
  LibCarla is the core C++ library from the CARLA autonomous driving
  simulator. This package provides static libraries and headers for
