@@ -4,44 +4,44 @@ Hash: SHA512
 Origin: the78mole/libcarla
 Label: LibCarla Repository
 Codename: stable
-Date: Tue, 09 Dec 2025 17:25:01 UTC
+Date: Tue, 21 Jul 2026 08:33:42 UTC
 Architectures: amd64 arm64
 Components: main
 Description: Official LibCarla APT Repository
 MD5Sum:
- 718cee4f52b4c140a28244bbacb181e4 2727 main/binary-amd64/Packages
- 22a1fdf6ea08732f6721efdef4197427 1018 main/binary-amd64/Packages.gz
+ e8da5da34f8ba4f74083a382dd7ebc20 2727 main/binary-amd64/Packages
+ 203657ece6b4660fa43d471c2f3be76a 1020 main/binary-amd64/Packages.gz
  242af0fd4c0b3ee23e5999de8617450b 136 main/binary-amd64/Release
- 74f757549aa541fa31216852a3416454 2727 main/binary-arm64/Packages
- f2108fde152066e50505c002a8933ee1 1015 main/binary-arm64/Packages.gz
+ 9c7130dab10af0e0799b0d738e8fd527 2727 main/binary-arm64/Packages
+ 1c7ad43bdd63a58cf7a5cb39ea8a39b4 1021 main/binary-arm64/Packages.gz
  0e313f25532a4dc6308617d8add53346 136 main/binary-arm64/Release
 SHA1:
- 692a685b1faec2f7fa05b4ea919ab166b14632bc 2727 main/binary-amd64/Packages
- 90999e301b9b53d5138f39a8714b31371c636f35 1018 main/binary-amd64/Packages.gz
+ 35b65ea81b22a02b614070e9052774b7696193d3 2727 main/binary-amd64/Packages
+ 6215d2f5f6449b2d66e7e7e743527c412ba0addd 1020 main/binary-amd64/Packages.gz
  f69786a0bb79a56a647ea889a8a37e2eec10b723 136 main/binary-amd64/Release
- afbccc788d1ced3d7f89e5caf33d2300c5775e6c 2727 main/binary-arm64/Packages
- 05601c7fd8e1e7de82b23f9380ca6c7e2586333f 1015 main/binary-arm64/Packages.gz
+ 113f68d8546bf868c68b2d18a2be740eaea35e55 2727 main/binary-arm64/Packages
+ 634b530dee953182316939786b8ac9de6ca03379 1021 main/binary-arm64/Packages.gz
  242127ce0674393d796e8d97e65b84aeebb66902 136 main/binary-arm64/Release
 SHA256:
- dcc6525e98a6a8698c55d208309ac3dba0f3fac99ec8f7caf73a1a211013de51 2727 main/binary-amd64/Packages
- 06aeb106ef9a8a03f5a3ecbeae4f2955212aa9441987dc9fa9ff27be6858c04b 1018 main/binary-amd64/Packages.gz
+ b9854ae92cdba9d74b2a2b48599d673cee7b71314509fd2356c1bb376c7c9309 2727 main/binary-amd64/Packages
+ 5ccec8f350ba076ed4a6f2e39f964dc8a1a3ffe8da9536c36237165052a8d4f5 1020 main/binary-amd64/Packages.gz
  422875accf1df86f4e6218c7e6a9c488eb6dba5444a5d28f4cbd4b02426cf464 136 main/binary-amd64/Release
- df9c83a91231090b2959f83eeeac9539ee5b7ac0dd386490069f94e003c53d89 2727 main/binary-arm64/Packages
- c4f01a2fcb3d03264e5f9563966c1b03769d923fa5183ee5dde4c9fa9b0656bb 1015 main/binary-arm64/Packages.gz
+ 0909df9c96af64f3a2a7d9dbe5c1b68a03098e3546c2aebcfbbd713fcc5ff7d5 2727 main/binary-arm64/Packages
+ f30949cf79735638740fb527ecd010930f334bdb1012b39df88da344bade647b 1021 main/binary-arm64/Packages.gz
  b447bdbb1dd96ea99915be17818f25ec8b2f78bee6aa226da4751e4758078273 136 main/binary-arm64/Release
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEEfrfVI1swGo+iY1BAHnno13Ojx3YFAmk4W20ACgkQHnno13Oj
-x3ZjvA/+IHlzu3MQvHXz8G8DB5Q7VLRZVqHIELfhu2GvDVmAGoN5MYK/JXdxufxH
-2eu1RDxHw4UAa8X41lm0Q/EfRjjB3p/gu7S7uyLh81tcd4HX08wI4Nat7Y+iKLNs
-REYZCfaoxxYmZ6NY1w8lSzMEOJGincG8xCUyS4Q3Oc5w/ccCbMcuQ23NA/R3zf99
-I1CzVrnG3uVstl1HePIS0YDssAlTKyiHtQoqd+ciyiajSxscCS6RCkbUiXO4lzzi
-5KHkWAa9q8IIQk+1u7PlfPKavoJNWO2iUVGFE+QjYLNyEBL9ab0l7NaEg6NloV1M
-2FEJXUszw3ya86aJZcPWG/AERbrTzd7U3lS/+HiuJKEhdnHLb2sXjRN1fmWcjiXR
-O7VKtgtM0xeeYK66r8a8pqQcK0g6+mNSKbSGVomATuq5AycMYZOaUjTmWvVwLVtW
-iOYy1dFSd3+zakGJpubfZJslFJO3VdYh/2f43HkXctJG1FmVGl0yhpvlLZpOo2EC
-IfrdCEUbdRnYe2hi+hZeQnAldxROXdznG7ZWZljJcKfIgTifMkG+cygHTF0iAsmu
-odzoZRtpMsHhwIP+HHBNQUF6QLovbjJv6YgtTtGqs2YasPSVal4fHqWExxP8n++H
-zuobT442fxhyF6Y4mfgxH9oZ0IkbH4djmFh1cGTr33qCmfDwaMg=
-=/qGR
+iQIzBAEBCgAdFiEEfrfVI1swGo+iY1BAHnno13Ojx3YFAmpfLuYACgkQHnno13Oj
+x3YGKQ//Z4FNhoA2SG4HLwwHVPNEuA6MTU2PBzWF/gqId+u1XA62XhIBVR/uXtn0
+0jCUdN1bqNK40TZlud/fdyb3bDTDwhB+0275wV5crlsvY6fabzbJU0goNtuz6j+7
+KemvrYQJcUhjTQk8bTnq6sXkcPimqjjGf9YKXCkYwWyWc1rngC0YKfOWjph4toEo
+f3GqELilkk8TbOZGkFbNO48oBUtNxFlpVsqe/Dsn6dKyWuKv4141kDQOWl1JJXJb
+9+HhaFEmGqBESMJ8Td/1G9Ha/mQgpYt/e+K+zHyeCma3XzBy4FsTD/SpIEIxCl8c
+tD0eVQLfM/2NqKEqNQo8/6Xx8BSKpZ1NpppWpG9jFRvYp3qKCgBpSSvWaQcCcbjp
+rln0urLWInnE9AdMEjztmiaWEv1gQPovOZgubEvOini4byqnyoEPcmM60DGotFHm
+9/Ziz0XDCAW1IQUIBPPs+RkY/dAw9Eks5UePOwGbmP5B2JchQanCx/YRXHdPhqBA
+vLrC2SbAZ1dK9S1fTgE0sddfJ07YyH6sI5+pmwjMIvi5D2XZysXg7Glz8F5HRXcL
+4q1OoTXD04ACmJVpoOXmRaC6Bm2vD+TsS/vi585SqwGkNrhp2u3v3jtpx98MVIdo
+BHrfmNPOaj2TUIDzrhy9IRnMAoabIX7FbOaRtRZeLISydn5vr0s=
+=7iXs
 -----END PGP SIGNATURE-----
